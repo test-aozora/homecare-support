@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>在宅業務サポート v0.89 QR修正版</title>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>在宅業務サポート v0.88</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif;background:linear-gradient(#edfbf6,#f7f8ff);color:#21313b}header{padding:18px;background:linear-gradient(135deg,#18a36d,#4bc89e);color:#fff;border-radius:0 0 24px 24px}main,header{max-width:760px;margin:auto}.sub{font-size:12px;opacity:.9}main{padding:14px}.card{background:#fff;border:1px solid #eaf1ef;border-radius:20px;padding:15px;margin:12px 0;box-shadow:0 5px 18px #355b6b12}.row{display:flex;justify-content:space-between;gap:8px;align-items:center}.tabs,.actions{display:flex;gap:8px;flex-wrap:wrap}.tabs button{flex:1}button{border:0;border-radius:14px;padding:11px 13px;font-weight:800;font-size:14px;background:#edf2f5;color:#33424b}.primary{background:linear-gradient(135deg,#168747,#27ad79);color:#fff}.badge{padding:5px 9px;border-radius:20px;font-size:12px;font-weight:800}.ok{background:#dcf8e9;color:#08733e}.danger{background:#ffe3e6;color:#b42536}.warn{background:#fff0cc;color:#9a6100}.pending{background:#e4efff;color:#2463a4}.hide{display:none}.muted{font-size:12px;color:#667085}.rx{border:1px solid #dce8e4;border-radius:15px;margin:10px 0;overflow:hidden}.rxhead{padding:9px 12px;background:#eef9f4;font-weight:850}.rxbody{padding:10px 12px}.drugline{padding:9px 0;border-bottom:1px dashed #dfe7e5}.drugline:last-child{border:0}.dose{float:right;font-weight:800}.task{border:1px solid #e7ecef;border-radius:15px;padding:12px;margin:9px 0}.task.done{background:#eaf9f0;border-color:#bce9ce}.task.locked{opacity:.55}.task button{width:100%;margin-top:8px}.progress{height:10px;background:#edf1f3;border-radius:99px;overflow:hidden}.progress div{height:100%;background:#20a464}.modal{position:fixed;inset:0;background:#0007;display:flex;align-items:flex-end;z-index:20}.modal.hide{display:none!important}.sheet{background:#fff;width:100%;max-width:760px;margin:auto;border-radius:24px 24px 0 0;padding:18px;max-height:85vh;overflow:auto}.choice{width:100%;text-align:left;margin:5px 0;background:#f3f7f8}input,select{width:100%;padding:11px;border:1px solid #ccd6dc;border-radius:11px;font-size:16px;margin:4px 0 9px}.changebox{margin-top:8px;padding:10px;background:#fff5f5;border-radius:12px}.saved{background:#eaf9f0;padding:9px;border-radius:10px;margin-top:8px;color:#08733e}
 
@@ -112,7 +112,7 @@
 
 <div id="carLayer" class="carLayer"><div class="carDust">💨</div><div class="car">🚗</div></div>
 <div id="toast" class="toast"></div>
-<header><b style="font-size:21px">🏠 在宅業務サポート</b><div class="sub">v0.89 QR読取修正版</div></header><main>
+<header><b style="font-size:21px">🏠 在宅業務サポート</b><div class="sub">v0.90 複数QR診断版</div></header><main>
 <div class="tabs"><button onclick="hideShareOverlay();tab('facility')">🏢 施設</button><button onclick="hideShareOverlay();openHomeWithCar()">🏠 個人在宅</button><button onclick="showPharmacyShare()">📣 情報共有</button><button onclick="hideShareOverlay();tab('todo')">⚠️ 要対応</button></div>
 
 <div id="todayPharmacyGlobal" class="card" style="margin-top:8px">
@@ -847,84 +847,95 @@ function rebuildTasksFromChanges(){
 }
 
 let rxQrStream=null, rxQrTimer=null;
+let rxQrSeen=new Map(), rxQrBusy=false;
+
+function rxQrStatusHtml(){
+  const items=[...rxQrSeen.values()];
+  const total=items.reduce((n,x)=>n+x.bytes,0);
+  return `
+    <div class="goodBox"><b>📷 複数QR読取モード</b><div class="muted">読み取ったQRは端末内メモリだけに一時保持します。本文・患者情報は表示・保存・外部送信しません。</div></div>
+    <div style="font-size:20px;font-weight:900;margin-top:10px">読取済み：<span id="rxQrCount">${items.length}</span>個</div>
+    <div class="muted" id="rxQrBytes">合計データ長：約 ${total} bytes</div>
+    <div id="rxQrParts" style="margin-top:8px">${items.map((x,i)=>`<div class="rxNeedOk">✅ QR ${i+1}　約 ${x.bytes} bytes</div>`).join('') || '<div class="rxNeedWarn">QRコードを1つずつカメラ中央に映してください。</div>'}</div>
+    <div class="muted" style="margin-top:8px">同じQRを再度映しても重複カウントしません。複数ある場合は、1個読めたら次のQRへ移してください。</div>
+    <button class="primary" style="width:100%;margin-top:10px" onclick="finishRxQrMultiTest()">✅ 読み取りを終了して診断結果を見る</button>
+    <button style="width:100%;margin-top:8px" onclick="stopRxQrTest();rxQrSeen.clear();closeModal()">中止</button>`;
+}
+
+function refreshRxQrStatus(){
+  const items=[...rxQrSeen.values()];
+  const c=document.getElementById('rxQrCount'); if(c)c.textContent=items.length;
+  const b=document.getElementById('rxQrBytes'); if(b)b.textContent=`合計データ長：約 ${items.reduce((n,x)=>n+x.bytes,0)} bytes`;
+  const parts=document.getElementById('rxQrParts');
+  if(parts)parts.innerHTML=items.map((x,i)=>`<div class="rxNeedOk">✅ QR ${i+1}　約 ${x.bytes} bytes</div>`).join('');
+}
 
 async function startRxQrTest(){
- if(location.protocol!=='https:' && location.hostname!=='localhost'){alert('現在はローカル確認モードです。処方箋QRカメラは完成版をHTTPS公開した後に利用できます。');return;}
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    alert('このブラウザではカメラ機能を利用できません。');
-    return;
-  }
-  if(!('BarcodeDetector' in window)){
-    alert('このブラウザは標準の端末内QR読取に対応していません。QR画像や患者情報は送信されていません。');
-    return;
-  }
-  try{
-    rxQrStream = await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:'environment'}}, audio:false
-    });
-    modal.classList.remove('hide');
-    modalTitle.textContent='🔒 処方箋QR 端末内テスト';
-    modalBody.innerHTML=`
-      <div class="goodBox"><b>端末内処理のみ</b><div class="muted">写真フォルダへの保存・QR本文の保存・外部送信は行いません。</div></div>
-      <video id="rxQrVideo" autoplay playsinline style="width:100%;border-radius:14px;margin-top:10px"></video>
-      <div class="muted" style="margin-top:8px">QRコードをカメラ中央に映してください。</div>
-      <button style="width:100%;margin-top:10px" onclick="stopRxQrTest();closeModal()">中止</button>`;
-    document.getElementById('rxQrVideo').srcObject=rxQrStream;
-    const detector=new BarcodeDetector({formats:['qr_code']});
-    const scan=async()=>{
-      if(!rxQrStream) return;
-      try{
-        const v=document.getElementById('rxQrVideo');
-        if(v && v.readyState>=2){
-          const codes=await detector.detect(v);
-          if(codes.length){
-            const raw=codes[0].rawValue || '';
-            // Render the result before stopping the camera. On some Android/Chrome
-            // devices, stopping the active video track synchronously inside
-            // BarcodeDetector.detect() can leave the modal repaint stalled.
-            showRxQrDiagnostic(raw);
-            requestAnimationFrame(()=>{
-              requestAnimationFrame(()=>stopRxQrTest());
-            });
-            return;
-          }
-        }
-      }catch(e){}
-      rxQrTimer=setTimeout(scan,250);
-    };
-    rxQrTimer=setTimeout(scan,500);
-  }catch(e){
-    stopRxQrTest();
-    alert(location.protocol==='https:'?'カメラを起動できませんでした。Chromeのサイト設定でカメラ権限を確認してください。':'この画面はローカルファイルとして開かれています。カメラ利用にはHTTPSで公開して開いてください。');
-  }
+ if(location.protocol!=='https:' && location.hostname!=='localhost'){alert('処方箋QRカメラはHTTPSで公開したページから利用してください。');return;}
+ if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){alert('このブラウザではカメラ機能を利用できません。');return;}
+ if(!('BarcodeDetector' in window)){alert('このブラウザは標準の端末内QR読取に対応していません。');return;}
+ try{
+   rxQrSeen.clear(); rxQrBusy=false;
+   rxQrStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+   modal.classList.remove('hide');
+   modalTitle.textContent='🔒 処方箋QR 複数読取テスト';
+   modalBody.innerHTML=`<video id="rxQrVideo" autoplay playsinline style="width:100%;border-radius:14px;margin-bottom:8px"></video>${rxQrStatusHtml()}`;
+   const v=document.getElementById('rxQrVideo'); v.srcObject=rxQrStream;
+   const detector=new BarcodeDetector({formats:['qr_code']});
+   const scan=async()=>{
+     if(!rxQrStream)return;
+     if(rxQrBusy){rxQrTimer=setTimeout(scan,180);return;}
+     rxQrBusy=true;
+     try{
+       const video=document.getElementById('rxQrVideo');
+       if(video&&video.readyState>=2){
+         const codes=await detector.detect(video);
+         let added=false;
+         for(const code of codes){
+           const raw=code.rawValue||'';
+           if(raw && !rxQrSeen.has(raw)){
+             rxQrSeen.set(raw,{raw,bytes:new TextEncoder().encode(raw).length});
+             added=true;
+           }
+         }
+         if(added){haptic([20]);refreshRxQrStatus();showToast(`✅ QR ${rxQrSeen.size}個目を読み取りました`);}
+       }
+     }catch(e){
+       const m=document.getElementById('rxQrBytes'); if(m)m.textContent='読取処理を継続中です…';
+     }finally{rxQrBusy=false;}
+     rxQrTimer=setTimeout(scan,180);
+   };
+   rxQrTimer=setTimeout(scan,500);
+ }catch(e){stopRxQrTest();alert('カメラを起動できませんでした。Chromeのサイト設定でカメラ権限を確認してください。');}
 }
 
 function stopRxQrTest(){
-  if(rxQrTimer){clearTimeout(rxQrTimer);rxQrTimer=null;}
-  if(rxQrStream){rxQrStream.getTracks().forEach(t=>t.stop());rxQrStream=null;}
+ if(rxQrTimer){clearTimeout(rxQrTimer);rxQrTimer=null;}
+ if(rxQrStream){rxQrStream.getTracks().forEach(t=>t.stop());rxQrStream=null;}
+ rxQrBusy=false;
+}
+
+function finishRxQrMultiTest(){
+ const items=[...rxQrSeen.values()];
+ if(!items.length){alert('まだQRコードを読み取れていません。');return;}
+ // 先に結果画面を描画し、その後カメラを停止する（Android Chrome対策）
+ const total=items.reduce((n,x)=>n+x.bytes,0);
+ const joined=items.map(x=>x.raw).join('\n');
+ const japanese=/[\u3040-\u30ff\u3400-\u9fff]/.test(joined);
+ const rxLike=/(Rp|処方|用法|錠|カプセル|mg|ｍｇ)/i.test(joined);
+ modal.classList.remove('hide');
+ modalTitle.textContent='✅ 複数QR 読取診断';
+ modalBody.innerHTML=`
+   <div class="goodBox"><b>端末内で ${items.length} 個のQRを読み取れました</b><br>合計データ長：約 <b>${total} bytes</b><br>日本語文字：<b>${japanese?'検出':'未検出'}</b><br>処方情報らしい文字：<b>${rxLike?'検出':'形式解析が必要'}</b></div>
+   <div class="muted" style="margin-top:10px">QR本文、患者氏名、保険情報は画面表示・保存・外部送信していません。個数とデータ量だけを診断表示しています。</div>
+   <button class="primary" style="width:100%;margin-top:10px" onclick="rxQrSeen.clear();closeModal()">閉じる</button>`;
+ requestAnimationFrame(()=>setTimeout(stopRxQrTest,120));
 }
 
 function showRxQrDiagnostic(raw){
-  const bytes=new TextEncoder().encode(raw).length;
-  const lines=raw.split(/\r?\n/).length;
-  const japanese=/[\u3040-\u30ff\u3400-\u9fff]/.test(raw);
-  const rxLike=/(Rp|処方|用法|錠|カプセル|mg|ｍｇ)/i.test(raw);
-  modal.classList.remove('hide');
-  modalTitle.textContent='✅ QR読取成功';
-  modalBody.innerHTML=`
-    <div class="goodBox">
-      <b>端末内でQRを読み取れました</b><br>
-      データ長：約 <b>${bytes} bytes</b><br>
-      行数：<b>${lines}</b><br>
-      日本語文字：<b>${japanese?'検出':'未検出'}</b><br>
-      処方情報らしい文字：<b>${rxLike?'検出':'形式解析が必要'}</b>
-    </div>
-    <div class="muted" style="margin-top:10px">
-      QR本文、患者氏名、保険情報は画面表示・保存していません。
-      この結果を使って次に薬剤・用法等だけを端末内で抽出する処理を作れます。
-    </div>
-    <button class="primary" style="width:100%;margin-top:10px" onclick="closeModal()">閉じる</button>`;
-  raw='';
+ // 旧1個読取関数との互換用。複数読取診断へ統一。
+ if(raw && !rxQrSeen.has(raw))rxQrSeen.set(raw,{raw,bytes:new TextEncoder().encode(raw).length});
+ finishRxQrMultiTest();
 }
 
 function closeModal(){if(dirty&&!confirm('保存していない変更があります。閉じますか？'))return;dirty=false;modal.classList.add('hide')}

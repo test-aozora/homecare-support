@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>在宅業務サポート v1.06</title>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>在宅業務サポート v0.88 QR切り分け版</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif;background:linear-gradient(#edfbf6,#f7f8ff);color:#21313b}header{padding:18px;background:linear-gradient(135deg,#18a36d,#4bc89e);color:#fff;border-radius:0 0 24px 24px}main,header{max-width:760px;margin:auto}.sub{font-size:12px;opacity:.9}main{padding:14px}.card{background:#fff;border:1px solid #eaf1ef;border-radius:20px;padding:15px;margin:12px 0;box-shadow:0 5px 18px #355b6b12}.row{display:flex;justify-content:space-between;gap:8px;align-items:center}.tabs,.actions{display:flex;gap:8px;flex-wrap:wrap}.tabs button{flex:1}button{border:0;border-radius:14px;padding:11px 13px;font-weight:800;font-size:14px;background:#edf2f5;color:#33424b}.primary{background:linear-gradient(135deg,#168747,#27ad79);color:#fff}.badge{padding:5px 9px;border-radius:20px;font-size:12px;font-weight:800}.ok{background:#dcf8e9;color:#08733e}.danger{background:#ffe3e6;color:#b42536}.warn{background:#fff0cc;color:#9a6100}.pending{background:#e4efff;color:#2463a4}.hide{display:none}.muted{font-size:12px;color:#667085}.rx{border:1px solid #dce8e4;border-radius:15px;margin:10px 0;overflow:hidden}.rxhead{padding:9px 12px;background:#eef9f4;font-weight:850}.rxbody{padding:10px 12px}.drugline{padding:9px 0;border-bottom:1px dashed #dfe7e5}.drugline:last-child{border:0}.dose{float:right;font-weight:800}.task{border:1px solid #e7ecef;border-radius:15px;padding:12px;margin:9px 0}.task.done{background:#eaf9f0;border-color:#bce9ce}.task.locked{opacity:.55}.task button{width:100%;margin-top:8px}.progress{height:10px;background:#edf1f3;border-radius:99px;overflow:hidden}.progress div{height:100%;background:#20a464}.modal{position:fixed;inset:0;background:#0007;display:flex;align-items:flex-end;z-index:20}.modal.hide{display:none!important}.sheet{background:#fff;width:100%;max-width:760px;margin:auto;border-radius:24px 24px 0 0;padding:18px;max-height:85vh;overflow:auto}.choice{width:100%;text-align:left;margin:5px 0;background:#f3f7f8}input,select{width:100%;padding:11px;border:1px solid #ccd6dc;border-radius:11px;font-size:16px;margin:4px 0 9px}.changebox{margin-top:8px;padding:10px;background:#fff5f5;border-radius:12px}.saved{background:#eaf9f0;padding:9px;border-radius:10px;margin-top:8px;color:#08733e}
 
@@ -104,10 +104,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="./manifest.webmanifest">
-
-<style id="v100-safe-hotfix">
-#homeDetail .card:has(#prepTasks){display:none!important;}
-</style>
 </head><body>
 <div id="localPreviewNotice" class="card" style="display:none;border:1px solid #f1c86b;background:#fff9e8">
  <b>🧪 ローカル確認モード</b>
@@ -116,7 +112,7 @@
 
 <div id="carLayer" class="carLayer"><div class="carDust">💨</div><div class="car">🚗</div></div>
 <div id="toast" class="toast"></div>
-<header><b style="font-size:21px">🏠 在宅業務サポート</b><div class="sub">v1.06 セット済み最終日修正版</div></header><main>
+<header><b style="font-size:21px">🏠 在宅業務サポート</b><div class="sub">v0.88 在宅薬剤・統合要対応版</div></header><main>
 <div class="tabs"><button onclick="hideShareOverlay();tab('facility')">🏢 施設</button><button onclick="hideShareOverlay();openHomeWithCar()">🏠 個人在宅</button><button onclick="showPharmacyShare()">📣 情報共有</button><button onclick="hideShareOverlay();tab('todo')">⚠️ 要対応</button></div>
 
 <div id="todayPharmacyGlobal" class="card" style="margin-top:8px">
@@ -130,7 +126,6 @@
 <div class="card">
   <div class="row"><b>🔒 処方箋QR 端末内テスト</b><span class="badge ok">保存しない</span></div>
   <div class="muted" style="margin:7px 0">スマホのカメラでQRを直接読み取ります。画像・QR本文・患者情報は保存せず、外部APIにも送信しません。</div>
-  <div id="qrEnvStatus" class="muted" style="margin:7px 0"></div>
   <button class="primary" style="width:100%" onclick="startRxQrTest()">📷 処方箋QRを端末内でテスト</button>
 </div>
 <div class="card"><div class="row"><b>ひなた老人ホーム</b><span class="badge danger" id="facilityCount">要対応 2</span></div><div class="muted">前回処方で仮調剤 → 今回処方確定後に差分対応</div><details style="margin-top:12px"><summary class="muted" style="cursor:pointer;text-align:center">⚙️ 施設の管理操作</summary><button style="width:100%;margin-top:9px;background:#f4f5f7;color:#667085" onclick="resetAllStatus()">↻ 次回処方サイクルを開始</button></details></div><div id="patients"></div></section>
@@ -154,7 +149,7 @@
 </div>
 
 <div class="card">
- <b>🧮 現在の残薬から作れる日数<br><span class="muted" style="font-weight:400">（薬局にある一包化済み＋一包化前）</span></b>
+ <b>🧮 現在の残薬から作れる日数</b>
  <div class="makeDays" id="makeDays"></div>
  <div id="makeReason" class="muted"></div>
  <div id="makeCompare"></div>
@@ -177,11 +172,6 @@
  <div class="actions"><button onclick="bulkStockEdit()">📦 全薬剤の残薬を一括編集</button><button class="primary" onclick="openHomeDrugRegister()">＋ 💊 薬品を登録</button></div>
 </div>
 
-<div class="card" id="homeCareTaskCard">
- <div class="row"><b>⚠️ 登録薬剤変更・要対応</b><span id="homeCareTaskStatus" class="badge pending"></span></div>
- <div id="homeCareTasks"></div>
-</div>
-
 <div class="card">
  <div class="row"><b>📦 一包化 残セット</b><span class="badge pending">＋ / −で入力</span></div><div id="madePackRemainBox" style="margin-top:10px;padding:12px;border-radius:12px;background:#f7fafb">
  <div class="row"><span>🏪 薬局保管の一包化残</span><b id="madePackRemainDays" style="font-size:22px">0日分</b></div>
@@ -189,7 +179,6 @@
  <div class="stepper" style="margin-top:8px"><b>全体</b><button onclick="madePackAllStep(-1)">−</button><span class="num" id="madePackAllNum">0</span><button onclick="madePackAllStep(1)">＋</button></div>
  <div id="madePackUseRows"></div>
  <div class="muted" id="madePackRemainUntil" style="margin-top:6px">作成可能最終日に反映します</div>
-</div>
 </div>
 
 <div class="card">
@@ -211,8 +200,6 @@
  <div class="muted" style="margin-top:8px">※ 訪問間隔・回数の簡易チェックです。通院困難性、医師の指示、他薬局との重複、対象患者、月内算定回数など他の算定要件は別途確認してください。</div>
 </div>
 
-
-
 <div class="card">
  <div class="row"><b>🗓️ 患者宅へのセット状況</b><span id="setThroughBadge" class="badge ok"></span></div>
  <div class="muted">実際に患者宅へセット済みの最終日を表示します。</div>
@@ -223,6 +210,11 @@
  <button style="width:100%;margin-top:9px" onclick="changeSetThrough()">📅 セット済み最終日を変更</button>
  <div id="pharmacyMadeBalance" class="stageLine" style="margin-top:8px">🏪 薬局保管の一包化残日数：--</div>
  <button style="width:100%;margin-top:7px" onclick="changePharmacyMadeDays()">🏪 薬局保管の一包化済み日数を変更</button>
+</div>
+
+<div class="card" id="homeCareTaskCard">
+ <div class="row"><b>⚠️ 要対応タスク</b><span id="homeCareTaskStatus" class="badge pending"></span></div>
+ <div id="homeCareTasks"></div>
 </div>
 
 <div class="card">
@@ -326,24 +318,6 @@ function nextTaskStatus(){
  return '作業待ち';
 }
 
-
-function cleanupFacilityRegisteredDrugsAfterTask(task){
- if(!task||!task.done)return;
- const text=String(task.t||'');
- // Only a completed discontinuation should disappear entirely from registered drugs.
- if(/中止|変更薬在庫処理/.test(text)){
-   const rec=Object.values(changeRecords||{}).find(c=>c && c.type==='中止' && (text.includes(c.name||'') || text.includes(c.drugName||'')));
-   if(rec){
-     const nm=rec.name||rec.drugName;
-     drugs=drugs.filter(d=>!(d.name===nm || d.id===rec.drugId || d.id===rec.id));
-   }else{
-     // Fallback: identify by exact registered drug name appearing in the task.
-     const hit=drugs.find(d=>text.includes(d.name));
-     if(hit)drugs=drugs.filter(d=>d.id!==hit.id);
-   }
- }
-}
-
 function syncStatusFromTasks(){
  if(!cur||!tasks.length)return;
  const done=tasks.filter(x=>x.done).length;
@@ -420,7 +394,7 @@ function renderHomeRx(){
  rx.forEach(d=>{const f=d.form||'一包化',key=f==='一包化'?'pack|'+d.use:f+'|'+d.id;if(!groups[key])groups[key]={form:f,use:d.use,items:[]};groups[key].items.push(d)});
  el.innerHTML=Object.values(groups).map(g=>{
   const title=g.form==='一包化'?`📦 一包化　${g.use}`:`${formIcon(g.form)} ${g.form}　${g.use}`;
-  return `<div class="rxGroup"><div class="rxGroupHead">${title}</div><div class="rxGroupBody">${g.items.map(d=>`<div class="rxDrug"><div class="row"><b>${d.name}</b><span class="dose">1回 ${d.qty}</span></div><div class="rxMeta"><span>${String(d.use||'').trim()==='頓服'?'🏪薬局保管':'残薬'} ${d.stock}</span><span>1日 ${d.perDay}</span><span>あと ${drugDays(d)}日分</span></div><div class="homeRxActions"><button onclick="editHomeDrug(${d.id})">✏️編集</button><button onclick="adjustStock(${d.id})">📦残薬更新</button><button type="button" onclick="event.preventDefault();event.stopPropagation();homeDrugChange(${d.id},'中止')">🚫中止</button><button onclick="homeDrugChange(${d.id},'減量')">⬇️減量</button><button onclick="homeDrugChange(${d.id},'増量')">⬆️増量</button></div></div>`).join('')}</div></div>`;
+  return `<div class="rxGroup"><div class="rxGroupHead">${title}</div><div class="rxGroupBody">${g.items.map(d=>`<div class="rxDrug"><div class="row"><b>${d.name}</b><span class="dose">1回 ${d.qty}</span></div><div class="rxMeta"><span>${String(d.use||'').trim()==='頓服'?'🏪薬局保管':'残薬'} ${d.stock}</span><span>1日 ${d.perDay}</span><span>あと ${drugDays(d)}日分</span></div><div class="homeRxActions"><button onclick="editHomeDrug(${d.id})">✏️編集</button><button onclick="adjustStock(${d.id})">📦残薬更新</button><button onclick="homeDrugChange(${d.id},'中止')">🚫中止</button><button onclick="homeDrugChange(${d.id},'減量')">⬇️減量</button><button onclick="homeDrugChange(${d.id},'増量')">⬆️増量</button></div></div>`).join('')}</div></div>`;
  }).join('');
 }
 
@@ -463,150 +437,19 @@ function saveHomeDrug(){
  const finalUse=hdrUse.value==='その他'?(hdrOtherUse.value.trim()||'その他'):hdrUse.value; const pd=numQty(hdrQty.value)*useTimes(hdrUse.value);
  const newDrug={id:Date.now(),name:hdrName.value.trim(),qty:hdrQty.value,use:finalUse,days:+hdrDays.value,rp,form,perDay:pd,stock:(+hdrDays.value||0)*pd};
  homeCur.rx.push(newDrug);linkPrnToPatientHome(newDrug);
- homeCur.careTasks=homeCur.careTasks||[];
- homeCur.careTasks.push({
-   id:'hc_'+Date.now()+'_add',kind:'drugChange',changeType:'新規追加',
-   drugId:newDrug.id,drugName:newDrug.name,newValue:newDrug.qty||'',newPerDay:newDrug.perDay||null,
-   stage:0,done:false,t:`${newDrug.name}：処方追加薬（新規登録）`
- });
- homeCur.careStatus='変更内容確認待ち';
  closeModal();renderHomeDetail();renderHome();render();showToast(finalUse==='頓服'?'💊 頓服を登録。患者宅残数は別管理です':'💊 薬品を登録しました');
 }
-
-
-
-function homeTaskStageLabel(t){
- const n=Math.max(0,Math.min(3,Number(t.stage)||0));
- return ['変更内容確認待ち','薬剤処理待ち','薬剤師確認待ち','完了'][n];
-}
-function advanceHomeDrugTask(i){
- const t=homeCur?.careTasks?.[i];if(!t)return;
- t.stage=Math.max(0,Math.min(3,Number(t.stage)||0));
-
- // ①変更内容確認 → ②薬剤処理 → ③薬剤師確認 → 完了
- if(t.stage===0){
-   t.stage=1;
-   t.done=false;
-   homeCur.careStatus='薬剤処理待ち';
- }else if(t.stage===1){
-   t.stage=2;
-   t.done=false;
-   homeCur.careStatus='薬剤師確認待ち';
- }else if(t.stage===2){
-   t.beforeDrug=t.kind==='drugChange'
-     ? JSON.parse(JSON.stringify((homeCur.rx||[]).find(d=>d.id===t.drugId)||null))
-     : null;
-   t.stage=3;
-   t.done=true;
-   t.pharmacistConfirmed=true;
-   t.pharmacistConfirmed=true;
-   applyHomeDrugChangeAfterCompletedTask(t);
-   homeCur.careStatus=(homeCur.careTasks||[]).some(x=>!x.done)
-     ? '薬剤師確認待ち'
-     : '薬剤師 最終確認済み';
- }
- renderHomeDetail();renderHome();render();
- setTimeout(forceShowHomeTaskArea,0);
-}
-
-function forceShowHomeTaskArea(){
- const card=document.getElementById('homeCareTaskCard'),list=document.getElementById('homeCareTasks'),st=document.getElementById('homeCareTaskStatus');
- if(!card||!list||!st||!homeCur)return;
- card.style.display='block';
- const a=homeCur.careTasks||[];
- st.textContent=a.length?`${a.filter(x=>!(Number(x.stage)===3||x.done===true)).length}件`:'変更なし';
- if(!a.length){list.innerHTML='<p class="muted">登録薬剤の中止・増減量・新規追加があると、ここに3段階の作業タスクが表示されます。</p>';return;}
-
- list.innerHTML=a.map((x,i)=>{
-   let stage=Number.isFinite(Number(x.stage))?Number(x.stage):(x.done?3:0);
-   stage=Math.max(0,Math.min(3,stage));
-
-   // v0.95/0.96で誤って「完了」になった新規追加タスクを救済:
-   // 最終確認の記録が無い旧タスクは薬剤師確認待ちへ戻す。
-   if(x.kind==='drugChange' && x.changeType==='新規追加' && x.done===true && !x.pharmacistConfirmed){
-     stage=2; x.stage=2; x.done=false;
-   }
-
-   const step=(n,label)=>`<span class="badge ${stage>n?'ok':stage===n?'danger':''}" style="margin-right:4px">${stage>n?'✓ ':''}${label}</span>`;
-   let btn='';
-   if(stage===0) btn=`<button class="primary" onclick="advanceHomeDrugTask(${i})">✓ 変更内容を確認</button>`;
-   else if(stage===1) btn=`<button class="primary" onclick="advanceHomeDrugTask(${i})">✓ 薬剤処理を完了</button>`;
-   else if(stage===2) btn=`<button class="primary" style="width:100%;margin-top:10px" onclick="advanceHomeDrugTask(${i})">👨‍⚕️ 薬剤師確認を完了</button>`;
-   else btn=`<button class="undoBtn" onclick="undoHomeCareTask(${i})">↩ 完了を取り消す</button>`;
-
-   return `<div class="task ${stage===3?'done':''}">
-    <div class="row"><b>${stage===3?'✅':'⬜'} ${x.t}</b><span class="badge ${stage===3?'ok':'danger'}">${stage===3?'完了':homeTaskStageLabel({...x,stage})}</span></div>
-    <div style="margin:8px 0">${step(0,'①変更内容確認')}${step(1,'②薬剤処理')}${step(2,'③薬剤師確認')}</div>
-    ${x.kind==='drugChange'&&x.changeType!=='中止'&&x.changeType!=='新規追加'?`<div class="muted">変更後：1回 ${x.newValue} ／ 1日量 ${x.newPerDay}</div>`:''}
-    ${x.changeType==='新規追加'?`<div class="muted">新規登録：${x.drugName}</div>`:''}
-    ${btn}
-   </div>`;
- }).join('');
-}
-
-function renderHomeChangeTasksNow(){ forceShowHomeTaskArea(); }
-function undoHomeCareTask(i){
- if(!homeCur?.careTasks?.[i])return;
- const t=homeCur.careTasks[i];
- if(t.done&&t.kind==='drugChange'&&t.beforeDrug){
-   const idx=(homeCur.rx||[]).findIndex(d=>d.id===t.drugId);
-   if(idx>=0)homeCur.rx[idx]=JSON.parse(JSON.stringify(t.beforeDrug)); else homeCur.rx.push(JSON.parse(JSON.stringify(t.beforeDrug)));
- }
- t.done=false;t.pharmacistConfirmed=false;t.stage=Math.min(2,Number(t.stage)||2);homeCur.careStatus='作業待ち';
- forceShowHomeTaskArea();renderHomeDetail();renderHome();render();setTimeout(forceShowHomeTaskArea,0);
-}
-
-function applyHomeDrugChangeAfterCompletedTask(task){
- if(!homeCur||!task||task.kind!=='drugChange')return;
- if(task.changeType==='新規追加')return;
- const idx=(homeCur.rx||[]).findIndex(d=>d.id===task.drugId);
- if(task.changeType==='中止'){
-   if(idx>=0)homeCur.rx.splice(idx,1);
-   return;
- }
- if(idx<0)return;
- const d=homeCur.rx[idx];
- if(task.newValue)d.qty=task.newValue;
- if(task.newPerDay!=null)d.perDay=Math.max(.01,Number(task.newPerDay)||d.perDay||1);
- // Remaining stock is not guessed/reset automatically; it remains the pharmacist-managed actual balance.
-}
-function completeHomeCareTask(i){advanceHomeDrugTask(i)}
-
 function homeDrugChange(id,type){
- const d=(homeCur?.rx||[]).find(x=>x.id===id);if(!d)return;
+ const d=(homeCur.rx||[]).find(x=>x.id===id);if(!d)return;let v='';
+ if(type!=='中止'){v=prompt(type+'後の内容を入力してください',d.qty);if(v===null)return}
  homeCur.careTasks=homeCur.careTasks||[];
- if(type==='中止'){
-   if(!confirm(`${d.name}を中止にしますか？\n処理完了後に登録薬剤から削除します。`))return;
-   if(!homeCur.careTasks.some(x=>!x.done&&x.kind==='drugChange'&&x.drugId===id&&x.changeType==='中止')){
-     homeCur.careTasks.push({id:'hc_'+Date.now(),kind:'drugChange',changeType:'中止',drugId:id,drugName:d.name,newValue:'',newPerDay:null,stage:0,done:false,t:`${d.name}：変更薬在庫処理`});
-   }
-   homeCur.careStatus='作業待ち';
-   forceShowHomeTaskArea();
-   setTimeout(()=>{renderHomeDetail();renderHome();render();forceShowHomeTaskArea()},0);
-   showToast('🚫 中止タスクを作成しました');
-   return;
- }
- openModal(`<h3>${type==='増量'?'⬆️':'⬇️'} ${d.name}：${type}</h3>
-  <label>変更後の1回量</label><input id="hchgQty" value="${d.qty||''}">
-  <label>変更後の1日量（錠/日）</label><input id="hchgPerDay" type="number" min="0.01" step="0.01" value="${Math.max(.01,+d.perDay||1)}">
-  <div class="muted">残薬数は変更しません。残薬はこれまで通り「📦残薬更新」で編集できます。</div>
-  <button class="primary" style="width:100%;margin-top:10px" onclick="saveHomeDrugChangeTask(${id},'${type}')">変更タスクを登録</button>`);
+ homeCur.careTasks.push({t:type==='中止'?`${d.name}の変更薬在庫処理を行う`:`${d.name}を${type}内容（${v}）へ修正する`,done:false});
+ homeCur.careStatus=type==='中止'?'変更薬在庫処理待ち':((type==='増量'||type==='減量')?'用量変更 作業待ち':'その他変更 作業待ち');
+ renderHomeDetail();renderHome();render();showToast('💾 '+type+'を登録しました');
 }
-function saveHomeDrugChangeTask(id,type){
- const d=(homeCur?.rx||[]).find(x=>x.id===id);if(!d)return;
- const q=document.getElementById('hchgQty')?.value.trim()||'';
- const pd=Math.max(.01,+document.getElementById('hchgPerDay')?.value||+d.perDay||1);
- if(!q){alert('変更後の1回量を入力してください');return}
- homeCur.careTasks=homeCur.careTasks||[];
- let t=homeCur.careTasks.find(x=>!x.done&&x.kind==='drugChange'&&x.drugId===id&&x.changeType===type);
- if(!t){t={id:'hc_'+Date.now(),kind:'drugChange',changeType:type,drugId:id,drugName:d.name,stage:0,done:false};homeCur.careTasks.push(t)}
- t.newValue=q;t.newPerDay=pd;t.t=`${d.name}：${type}へ変更`;
- homeCur.careStatus='作業待ち';
- closeModal();
- forceShowHomeTaskArea();
- setTimeout(()=>{renderHomeDetail();renderHome();render();forceShowHomeTaskArea()},0);
- showToast(`💊 ${type}タスクを作成しました`);
-}
+
+
+
 
 function monthKey(iso){return iso?iso.slice(0,7):''}
 function renderVisitHistory(){
@@ -716,9 +559,7 @@ function changeSetThrough(){
  modalBody.innerHTML=`<label>患者宅にセットしてある最終日</label><input id="hstDate" type="date" value="${homeCur.setupThrough||''}"><div class="muted">この日まで患者宅へのセットが完了しているとして表示します。</div><button class="primary" style="width:100%;margin-top:10px" onclick="saveSetThrough()">💾 セット状況を保存</button>`;
 }
 function saveSetThrough(){
- const input=document.getElementById('hstDate');
- const newDate=input ? input.value : '';
- if(!newDate){alert('セット済み最終日を選択してください');return;}
+ const newDate=setThroughDate.value;if(!newDate)return;
  const oldDate=homeCur.setupThrough||'';
  if(oldDate&&newDate>oldDate){
    const moved=Math.max(0,isoDateDiff(oldDate,newDate));
@@ -732,7 +573,6 @@ function saveSetThrough(){
  ['朝','昼','夕','寝前'].forEach(k=>{if(homeCur.activePacks?.[k]!==false)homeCur.pharmacyMadeByUse[k]=Math.max(0,(+homeCur.pharmacyMadeByUse[k]||0)-moved)});
  recalcMadePackDays();
    homeCur.setupThrough=newDate;
-   setCalView=newDate.slice(0,7);
    closeModal();renderHomeDetail();renderHome();render();
    showToast(`🏠 ${moved}日分を患者宅へセット。🏪薬局保管は残り${homeCur.pharmacyMadeDays}日分です`);
    return;
@@ -740,7 +580,7 @@ function saveSetThrough(){
  if(oldDate&&newDate<oldDate){
    if(!confirm('セット済み最終日を過去方向へ変更します。\n薬局保管の一包化残日数は自動では増やしません。よろしいですか？'))return;
  }
- homeCur.setupThrough=newDate;setCalView=newDate.slice(0,7);closeModal();renderHomeDetail();renderHome();render();showToast('🗓️ セット済み最終日を更新しました');
+ homeCur.setupThrough=newDate;closeModal();renderHomeDetail();renderHome();render();showToast('🗓️ セット済み最終日を更新しました');
 }
 function refreshVisitLabel(p){
  const [y,m,d]=p.visitDate.split('-').map(Number);
@@ -750,23 +590,6 @@ function refreshVisitLabel(p){
  p.days=Math.max(0,Math.ceil((target-base)/86400000));
 }
 
-
-
-function calcMakeable(p){
- const rx=(p.rx||[]).filter(d=>d.use!=='頓服');
- if(!rx.length)return {days:0,raw:0,made:(p.pharmacyMadeDays||0),name:'登録薬剤なし',names:[]};
- rx.forEach(ensureRxInventory);
- const raw=Math.min(...rx.map(drugDays));
- const names=rx.filter(d=>drugDays(d)===raw).map(d=>d.name);
- const made=Number(p.pharmacyMadeDays)||0;
- return {
-   days:made+raw,
-   raw:raw,
-   made:made,
-   name:names.join('・')||'—',
-   names:names
- };
-}
 
 function prescriptionNeed(p){
  const rx=(p.rx||[]).filter(d=>d.use!=='頓服');if(!rx.length)return {state:'unknown',days:0,short:0,names:[]};
@@ -794,36 +617,14 @@ function renderPrescriptionNeed(){
 }
 
 function homeShortages(p){
- const days=Math.max(0,Number(p.days)||0);
- const shortages=[];
-
- // 一包化済み残数：画面下部の「一包化 残セット」と同じ madePacks を直接参照。
- // 次回訪問までの日数以上あれば不足表示しない。
- if(typeof ensureMadePackByUse==='function')ensureMadePackByUse();
- const made=p.madePacks||{};
- const active=p.activePacks||{};
- Object.entries(made).forEach(([use,val])=>{
-   if(active[use]===false)return;
-   const have=Math.max(0,Number(val)||0);
-   const lack=Math.max(0,days-have);
-   if(lack>0)shortages.push({type:'pack',name:use+'一包化',qty:lack,unit:'セット'});
+ const a=[];
+ Object.entries(p.packs).forEach(([k,v])=>{
+   if(p.activePacks[k] && v<p.days) a.push({label:`${k}一包化`,amount:`${p.days-v}セット不足`});
  });
-
- // 一包化前の薬剤残数：
- // 「残薬」÷「1日量」で判定せず、必要錠数をそのまま比較する。
- // 頓服は日数ベースの不足判定から除外。
- (p.rx||[]).forEach(d=>{
-   if(d.use==='頓服')return;
-   if(typeof ensureRxInventory==='function')ensureRxInventory(d);
-   const perDay=Math.max(0,Number(d.perDay)||0);
-   if(perDay<=0)return;
-   const have=Math.max(0,Number(d.stock)||0);
-   const need=days*perDay;
-   const lack=Math.max(0,Math.ceil(need-have));
-   if(lack>0)shortages.push({type:'drug',name:d.name,qty:lack,unit:'錠'});
+ p.loose.forEach(x=>{
+   if(x.remain<x.need) a.push({label:x.n,amount:`${x.need-x.remain}錠不足`});
  });
-
- return shortages;
+ return a;
 }
 function renderHome(){
  const el=document.getElementById('homePatients'); if(!el)return;
@@ -847,21 +648,16 @@ function openHomePatient(id){
  renderHomeDetail();
 }
 function renderHomeDetail(){
- if(homeCur && typeof ensureMadePackByUse==='function' && typeof recalcMadePackDays==='function'){ensureMadePackByUse();recalcMadePackDays();}
- setTimeout(renderHomeChangeTasksNow,0);
  setTimeout(renderMadePackControls,0);
  syncRegisteredPrnToPatientHome();
  setTimeout(refreshMadePackRemain,0);
  ensurePrnPatientHomeRows();
  renderHomeRx();renderSetCalendar();renderVisitHistory();renderBillingCheck();renderPrescriptionNeed();
  const sh=homeShortages(homeCur),mk=calcMakeable(homeCur);
- const makeDaysEl=document.getElementById('makeDays');
- const makeReasonEl=document.getElementById('makeReason');
- const makeCompareEl=document.getElementById('makeCompare');
- if(makeDaysEl)makeDaysEl.textContent=mk.days+'日分';
- if(makeReasonEl)makeReasonEl.textContent='最初になくなる：'+mk.name;
+ makeDays.textContent=mk.days+'日分';
+ makeReason.textContent='最初になくなる：'+mk.name;
  const diff=mk.days-homeCur.days;
- if(makeCompareEl)makeCompareEl.innerHTML=diff>=0?`<div class="goodBox">🟢 次回訪問まで${homeCur.days}日 → <b>${diff}日分余裕</b></div>`:`<div class="shortageBox">🔴 次回訪問まで${homeCur.days}日 → <b>${-diff}日分不足</b></div>`;
+ makeCompare.innerHTML=diff>=0?`<div class="goodBox">🟢 次回訪問まで${homeCur.days}日 → <b>${diff}日分余裕</b></div>`:`<div class="shortageBox">🔴 次回訪問まで${homeCur.days}日 → <b>${-diff}日分不足</b></div>`;
  hStatus.className='badge '+(sh.length?'danger':'ok');
  hStatus.textContent=sh.length?`不足 ${sh.length}件`:'次回まで足ります';
  hShortage.innerHTML=sh.length
@@ -883,7 +679,9 @@ function renderHomeDetail(){
  looseRows.innerHTML=(linkedHtml+manualHtml)||'<p class="muted">個別管理する薬はありません。</p>';
  looseCountBadge.textContent=homeCur.loose.length+'件';
 
- renderHomeChangeTasksNow();
+ const ct=homeCur.careTasks||[];
+ homeCareTaskCard.style.display=ct.length?'block':'none';
+ if(ct.length){homeCareTaskStatus.textContent=homeCareStatus(homeCur);homeCareTasks.innerHTML=ct.map((x,i)=>`<div class="task ${x.done?'done':''}"><b>${x.done?'✅':'⬜'} ${x.t}</b><button class="${x.done?'undoBtn':'primary'}" onclick="toggleHomeCareTask(${i})">${x.done?'↩ 完了を取り消す':'✓ この作業を完了'}</button></div>`).join('')}
  prepTasks.innerHTML=homeCur.prep.map((x,i)=>{
    const key=homeCur.id+'-'+i,done=!!prepDone[key];
    return `<div class="visitTask ${done?'done':''}"><b>${done?'✅':'⬜'} ${x}</b><button onclick="togglePrep(${i})">${done?'↩':'✓'}</button><div style="clear:both"></div></div>`;
@@ -958,7 +756,7 @@ function openHomeSettings(){
  <label><input id="hsEvening" type="checkbox" ${homeCur.activePacks.夕?'checked':''} style="width:auto"> 夕</label>
  <label><input id="hsBed" type="checkbox" ${homeCur.activePacks.寝前?'checked':''} style="width:auto"> 寝前</label>
  <button class="primary" style="width:100%;margin-top:10px" onclick="saveHomeSettings()">💾 設定を保存</button>
-`;
+<button onclick="showPharmacyShare()">📣 薬局内共有</button>`;
 }
 function saveHomeSettings(){
  if(!hsName.value.trim()||!hsDate.value){alert('患者名と次回訪問予定日は必須です');return}
@@ -978,7 +776,14 @@ function saveNextVisit(){
  homeCur.visitDate=hnvDate.value;homeCur.visitTime=hnvTime.value;refreshVisitLabel(homeCur);
  closeModal();hVisit.textContent='次回訪問 '+homeCur.visit;hDays.textContent=`あと ${homeCur.days} 日`;renderHomeDetail();renderHome();render();showToast('📅 次回訪問日を変更しました');
 }
-function toggleHomeCareTask(i){completeHomeCareTask(i)}
+function toggleHomeCareTask(i){
+ const t=homeCur.careTasks[i];if(t.done){if(!confirm('この作業を未完了に戻しますか？'))return;t.done=false}else t.done=true;
+ homeCur.careStatus=homeCur.careTasks.every(x=>x.done)?'薬剤師 最終確認待ち':'作業待ち';
+ haptic(15);renderHomeDetail();renderHome();render();showToast(t.done?'✅ 作業を完了しました':'↩ 未完了に戻しました');
+}
+function togglePrep(i){
+ const key=homeCur.id+'-'+i; prepDone[key]=!prepDone[key]; haptic(12); renderHomeDetail();
+}
 function completePrep(){
  const all=homeCur.prep.every((_,i)=>prepDone[homeCur.id+'-'+i]);
  if(!all){alert('まだ未完了の訪問準備があります');return}
@@ -986,9 +791,9 @@ function completePrep(){
 }
 
 let todoFilter='all';
-function setTodoFilter(v){todoFilter=v;['All','Facility','Home'].forEach(x=>document.getElementById('tf'+x)?.classList.remove('active'));document.getElementById(v==='all'?'tfAll':v==='facility'?'tfFacility':'tfHome')?.classList.add('active');render();augmentMainNeedsWithSharing();}
+function setTodoFilter(v){todoFilter=v;['All','Facility','Home'].forEach(x=>document.getElementById('tf'+x)?.classList.remove('active'));document.getElementById(v==='all'?'tfAll':v==='facility'?'tfFacility':'tfHome')?.classList.add('active');render()}
 function render(){hideShareOverlay();renderHome();let fc=document.getElementById('facilityCount');if(fc){let n=P.filter(p=>p.s=='danger'||p.s=='warn').length;fc.textContent='要対応 '+n}patients.innerHTML=P.map(p=>`<div class="card" onclick="openP(${p.id},'facility')"><div class="row"><div><b>${p.n}</b><div class="muted">${p.r}</div></div><span class="badge ${p.s}">${p.l}</span></div></div>`).join('');const fItems=P.filter(p=>p.s!='ok'),hItems=HOME.filter(p=>homeCareStatus(p));
- tcFacility.textContent=fItems.length;tcHome.textContent=hItems.length;const shareNeedsCount=(typeof pharmacyOpenNeeds==='function'?pharmacyOpenNeeds().length:0);tcAll.textContent=fItems.length+hItems.length+shareNeedsCount;
+ tcFacility.textContent=fItems.length;tcHome.textContent=hItems.length;tcAll.textContent=fItems.length+hItems.length;
  const fHtml=fItems.map(p=>`<div class="card" onclick="openP(${p.id},'todo')"><div class="row"><div class="todoName"><b>${p.n}</b><span class="badge typeFacility">🏢 施設</span></div><span class="badge ${p.s}">${p.l}</span></div><div class="muted">タップして「やること」を確認</div></div>`);
  const hHtml=hItems.map(p=>`<div class="card" onclick="openHomePatient(${p.id})"><div class="row"><div class="todoName"><b>${p.n}</b><span class="badge typeHome">🏠 在宅</span></div><span class="badge danger">${homeCareStatus(p)}</span></div><div class="muted">次回 ${p.visit} ・ タップして確認</div></div>`);
  todos.innerHTML=(todoFilter==='facility'?fHtml:todoFilter==='home'?hHtml:[...fHtml,...hHtml]).join('')}
@@ -1003,7 +808,7 @@ function renderTasks(){
 }
 function completeTask(i){
  if(i>0&&!tasks[i-1].done){alert('上の作業を先に完了してください');return}
- tasks[i].done=true;haptic(18);renderTasks();showToast('✅ 作業を完了しました');cleanupFacilityRegisteredDrugsAfterTask(tasks[i]);renderRx();syncStatusFromTasks();
+ tasks[i].done=true;haptic(18);renderTasks();showToast('✅ 作業を完了しました');syncStatusFromTasks();
 }
 function undoTask(i){
  if(!confirm('この作業を未完了に戻しますか？'))return;
@@ -1041,99 +846,87 @@ function rebuildTasksFromChanges(){
  work.forEach(t=>{if(prev.has(t.key))t.done=prev.get(t.key)});tasks=work;
 }
 
-let rxQrStream=null, rxQrTimer=null;
-
-function renderQrEnvironment(){
- const el=document.getElementById('qrEnvStatus');if(!el)return;
- const secure=(location.protocol==='https:'||location.hostname==='localhost');
- const camera=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
- const detector=('BarcodeDetector' in window);
- if(!secure){
-   el.innerHTML='🧪 <b>ローカル確認中</b>：画面は確認できます。カメラテストはHTTPS公開後に有効になります。';
- }else if(!camera){
-   el.innerHTML='🔴 HTTPSですが、このブラウザではカメラAPIを利用できません。';
- }else if(!detector){
-   el.innerHTML='🟡 カメラは利用可能ですが、このブラウザは端末内QR検出に未対応です。Android版Chromeでの確認を推奨します。';
- }else{
-   el.innerHTML='🟢 <b>QR実機テスト可能</b>：HTTPS・カメラ・端末内QR検出を確認しました。';
- }
-}
-
-
-document.addEventListener('DOMContentLoaded',()=>{try{renderQrEnvironment()}catch(e){}});
+let rxQrStream=null, rxQrTimer=null, rxQrBusy=false;
 
 async function startRxQrTest(){
- if(location.protocol!=='https:' && location.hostname!=='localhost'){alert('現在はローカル確認モードです。処方箋QRカメラは完成版をHTTPS公開した後に利用できます。');return;}
+  if(location.protocol!=='https:' && location.hostname!=='localhost'){
+    alert('カメラ利用にはHTTPSで公開したページを開いてください。');return;
+  }
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    alert('このブラウザではカメラ機能を利用できません。');
-    return;
+    alert('このブラウザではカメラ機能を利用できません。');return;
   }
   if(!('BarcodeDetector' in window)){
-    alert('このブラウザは標準の端末内QR読取に対応していません。QR画像や患者情報は送信されていません。');
-    return;
+    alert('このブラウザは標準のQR読取に対応していません。Chromeで開いてください。');return;
   }
   try{
-    rxQrStream = await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:'environment'}}, audio:false
+    stopRxQrTest();
+    rxQrStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false
     });
     modal.classList.remove('hide');
-    modalTitle.textContent='🔒 処方箋QR 端末内テスト';
+    modalTitle.textContent='🧪 QR読取 切り分けテスト';
     modalBody.innerHTML=`
-      <div class="goodBox"><b>端末内処理のみ</b><div class="muted">写真フォルダへの保存・QR本文の保存・外部送信は行いません。</div></div>
-      <video id="rxQrVideo" autoplay playsinline style="width:100%;border-radius:14px;margin-top:10px"></video>
-      <div class="muted" style="margin-top:8px">QRコードをカメラ中央に映してください。</div>
+      <div class="goodBox"><b>まず「QR本文を読めるか」だけ確認します</b><div class="muted">読み取った内容はこの画面にだけ表示し、保存・外部送信しません。</div></div>
+      <video id="rxQrVideo" autoplay muted playsinline style="width:100%;max-height:48vh;object-fit:cover;border-radius:14px;margin-top:10px;background:#111"></video>
+      <div id="rxQrState" class="muted" style="margin-top:8px">📷 カメラ起動中… QRコードを中央に映してください。</div>
       <button style="width:100%;margin-top:10px" onclick="stopRxQrTest();closeModal()">中止</button>`;
-    document.getElementById('rxQrVideo').srcObject=rxQrStream;
+    const video=document.getElementById('rxQrVideo');
+    video.srcObject=rxQrStream;
+    await video.play().catch(()=>{});
     const detector=new BarcodeDetector({formats:['qr_code']});
     const scan=async()=>{
-      if(!rxQrStream) return;
+      if(!rxQrStream)return;
+      if(rxQrBusy){rxQrTimer=setTimeout(scan,350);return;}
+      rxQrBusy=true;
       try{
         const v=document.getElementById('rxQrVideo');
-        if(v && v.readyState>=2){
+        if(v && v.readyState>=2 && v.videoWidth>0){
           const codes=await detector.detect(v);
-          if(codes.length){
-            const raw=codes[0].rawValue || '';
-            stopRxQrTest();
-            showRxQrDiagnostic(raw);
-            return;
+          if(codes && codes.length){
+            const raw=String(codes[0].rawValue||'');
+            if(raw){
+              stopRxQrTest();
+              showRxQrDiagnostic(raw);
+              return;
+            }
           }
         }
-      }catch(e){}
-      rxQrTimer=setTimeout(scan,250);
+      }catch(e){
+        const st=document.getElementById('rxQrState');
+        if(st)st.textContent='読取処理を継続中… '+(e?.name||'');
+      }finally{rxQrBusy=false;}
+      if(rxQrStream)rxQrTimer=setTimeout(scan,350);
     };
-    rxQrTimer=setTimeout(scan,500);
+    rxQrTimer=setTimeout(scan,700);
   }catch(e){
     stopRxQrTest();
-    alert(location.protocol==='https:'?'カメラを起動できませんでした。Chromeのサイト設定でカメラ権限を確認してください。':'この画面はローカルファイルとして開かれています。カメラ利用にはHTTPSで公開して開いてください。');
+    alert('カメラを起動できませんでした。Chromeのサイト設定でカメラ権限を確認してください。');
   }
 }
 
 function stopRxQrTest(){
   if(rxQrTimer){clearTimeout(rxQrTimer);rxQrTimer=null;}
   if(rxQrStream){rxQrStream.getTracks().forEach(t=>t.stop());rxQrStream=null;}
+  rxQrBusy=false;
+}
+
+function escapeQrText(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 function showRxQrDiagnostic(raw){
-  const bytes=new TextEncoder().encode(raw).length;
-  const lines=raw.split(/\r?\n/).length;
-  const japanese=/[\u3040-\u30ff\u3400-\u9fff]/.test(raw);
-  const rxLike=/(Rp|処方|用法|錠|カプセル|mg|ｍｇ)/i.test(raw);
+  const text=String(raw||'');
+  const bytes=new TextEncoder().encode(text).length;
+  const lines=text.split(/\r?\n/).length;
   modal.classList.remove('hide');
-  modalTitle.textContent='✅ QR読取成功';
+  modalTitle.textContent='✅ QRを検出しました';
   modalBody.innerHTML=`
-    <div class="goodBox">
-      <b>端末内でQRを読み取れました</b><br>
-      データ長：約 <b>${bytes} bytes</b><br>
-      行数：<b>${lines}</b><br>
-      日本語文字：<b>${japanese?'検出':'未検出'}</b><br>
-      処方情報らしい文字：<b>${rxLike?'検出':'形式解析が必要'}</b>
-    </div>
-    <div class="muted" style="margin-top:10px">
-      QR本文、患者氏名、保険情報は画面表示・保存していません。ページを閉じれば読取結果も残りません。<br>
-      まずは「処方箋QRをこの端末で読み取れるか」だけを確認する診断モードです。
-    </div>
-    <button class="primary" style="width:100%;margin-top:10px" onclick="closeModal()">閉じる</button>`;
-  raw='';
+    <div class="goodBox"><b>QRの検出・読取までは成功です</b><br>文字数：<b>${text.length}</b> ／ 約 <b>${bytes} bytes</b> ／ 行数：<b>${lines}</b></div>
+    <div style="margin-top:10px"><b>読み取った生データ</b></div>
+    <pre style="white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-all;max-height:45vh;overflow:auto;background:#f5f7f8;border:1px solid #dfe7ea;border-radius:12px;padding:10px;font-size:12px;user-select:text;-webkit-user-select:text">${escapeQrText(text)}</pre>
+    <div class="muted">※切り分けテスト用です。この内容はlocalStorage等へ保存せず、外部APIにも送信していません。</div>
+    <button class="primary" style="width:100%;margin-top:10px" onclick="startRxQrTest()">📷 もう一度読む</button>
+    <button style="width:100%;margin-top:8px" onclick="closeModal()">閉じる</button>`;
 }
 
 function closeModal(){if(dirty&&!confirm('保存していない変更があります。閉じますか？'))return;dirty=false;modal.classList.add('hide')}
@@ -1353,19 +1146,18 @@ function pharmacyOpenNeeds(){
  }));
 }
 function augmentMainNeedsWithSharing(){
- const btn=document.getElementById('needsFilterShare');
- const root=btn?btn.closest('section'):null;
+ // Locate the main needs filter/count area by visible labels and append sharing cards to its patient-list container.
+ const candidates=[...document.querySelectorAll('section:not(.hide), main, body')];
+ let root=candidates.find(r=>r.textContent.includes('すべて')&&r.textContent.includes('施設')&&r.textContent.includes('在宅')&&r.textContent.includes('要対応'));
  if(!root)return;
- const old=document.getElementById('mainNeedsShareRows');if(old)old.remove();
- const items=pharmacyOpenNeeds();if(!items.length)return;
+ const old=document.getElementById('mainNeedsShareRows'); if(old)old.remove();
+ const items=pharmacyOpenNeeds(); if(!items.length)return;
+ // Find cards container near current needs cards; append a dedicated block.
  const block=document.createElement('div');block.id='mainNeedsShareRows';
  block.innerHTML=items.map(x=>`<div class="card" style="margin-top:8px" onclick="showPharmacyShare()">
    <div class="row"><b>${x.name}</b><span class="badge pending">📣 情報共有</span></div>
    <div class="muted">${x.due?'期限 '+x.due+'　':''}タップして共有事項を確認</div>
  </div>`).join('');
- // 「すべて」または「情報共有」の時だけ共有行を表示。
- // 施設・在宅フィルターでは混在させない。
- block.style.display=(needsUnifiedFilter==='share'||todoFilter==='all')?'':'none';
  root.appendChild(block);
 }
 function renderShareCalendar(){
@@ -1375,21 +1167,13 @@ function renderShareCalendar(){
  const first=new Date(y,m,1), last=new Date(y,m+1,0), start=first.getDay();
  const items=shareLoad().filter(x=>x.status!=='done'&&x.due);
  const counts={};items.forEach(x=>counts[x.due]=(counts[x.due]||0)+1);
- const today=shareToday();
- const todayDate=new Date(today+'T00:00:00');
  let h=`<div class="row"><button onclick="moveShareCal(-1)">‹</button><b>${y}年 ${m+1}月</b><button onclick="moveShareCal(1)">›</button></div>
- <div class="muted" style="margin-top:6px">🔴 本日・期限超過　🟡 期限が近い（3日以内）</div>
  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px;text-align:center;font-size:11px">
  ${['日','月','火','水','木','金','土'].map(d=>`<b>${d}</b>`).join('')}`;
  for(let i=0;i<start;i++)h+='<div></div>';
  for(let d=1;d<=last.getDate();d++){
    const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,c=counts[key]||0;
-   const dt=new Date(key+'T00:00:00');
-   const diff=Math.round((dt-todayDate)/86400000);
-   let urgency='';
-   if(c&&diff<=0)urgency='background:#ffe1e5;border:1px solid #ef9aa7;color:#9b1c31;';
-   else if(c&&diff>=1&&diff<=3)urgency='background:#fff3bf;border:1px solid #e5c85b;color:#6f5600;';
-   h+=`<button onclick="selectShareDate('${key}')" style="min-height:44px;padding:3px;${urgency}${shareSelectedDate===key?'outline:2px solid currentColor;':''}">${d}${c?`<br><b>●${c}</b>`:''}</button>`;
+   h+=`<button onclick="selectShareDate('${key}')" style="min-height:44px;padding:3px;${shareSelectedDate===key?'outline:2px solid currentColor;':''}">${d}${c?`<br><b>●${c}</b>`:''}</button>`;
  }
  h+='</div><div id="shareCalendarDayList" style="margin-top:8px"></div>';
  host.innerHTML=h;renderShareCalendarDay();
@@ -1489,7 +1273,35 @@ function linkPrnToPatientHome(d){
  else x.n=d.name;
 }
 
+function setHomeSetupThrough(dateStr){
+ if(!homeCur||!dateStr)return;
+ // Canonical field plus compatibility aliases used by earlier builds.
+ homeCur.setupThrough=dateStr;
+ homeCur.setThrough=dateStr;
+ homeCur.setupEnd=dateStr;
+ homeCur.lastSetDate=dateStr;
 
+ const today=new Date(); today.setHours(0,0,0,0);
+ const end=new Date(dateStr+'T00:00:00');
+ const diff=Math.floor((end-today)/86400000)+1;
+ homeCur.remainingSetDays=Math.max(0,diff);
+
+ // Persist through whichever save mechanism this build exposes.
+ try{ if(typeof saveHome==='function')saveHome(); }catch(e){}
+ try{ if(typeof save==='function')save(); }catch(e){}
+ try{ localStorage.setItem('homePatients',JSON.stringify(typeof homes!=='undefined'?homes:[])); }catch(e){}
+
+ renderHomeDetail();
+ try{renderHome()}catch(e){}
+ try{render()}catch(e){}
+ setTimeout(()=>{try{refreshMadePackRemain();renderMadePackControls()}catch(e){}},0);
+ showToast('📦 セット済み最終日を更新しました');
+}
+
+function homeSetupThroughValue(){
+ if(!homeCur)return '';
+ return homeCur.setupThrough||homeCur.setThrough||homeCur.setupEnd||homeCur.lastSetDate||'';
+}
 </script>
 <section id="pharmacyShareScreen" class="hide">
  <div class="card">

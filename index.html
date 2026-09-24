@@ -112,7 +112,7 @@
 
 <div id="carLayer" class="carLayer"><div class="carDust">💨</div><div class="car">🚗</div></div>
 <div id="toast" class="toast"></div>
-<header><b style="font-size:21px">🏠 在宅業務サポート</b><div class="sub">v0.90 複数QR診断版</div></header><main>
+<header><b style="font-size:21px">🏠 在宅業務サポート</b><div class="sub">v0.92 JAHIS手動読取版</div></header><main>
 <div class="tabs"><button onclick="hideShareOverlay();tab('facility')">🏢 施設</button><button onclick="hideShareOverlay();openHomeWithCar()">🏠 個人在宅</button><button onclick="showPharmacyShare()">📣 情報共有</button><button onclick="hideShareOverlay();tab('todo')">⚠️ 要対応</button></div>
 
 <div id="todayPharmacyGlobal" class="card" style="margin-top:8px">
@@ -846,97 +846,71 @@ function rebuildTasksFromChanges(){
  work.forEach(t=>{if(prev.has(t.key))t.done=prev.get(t.key)});tasks=work;
 }
 
-let rxQrStream=null, rxQrTimer=null;
-let rxQrSeen=new Map(), rxQrBusy=false;
-
-function rxQrStatusHtml(){
-  const items=[...rxQrSeen.values()];
-  const total=items.reduce((n,x)=>n+x.bytes,0);
-  return `
-    <div class="goodBox"><b>📷 複数QR読取モード</b><div class="muted">読み取ったQRは端末内メモリだけに一時保持します。本文・患者情報は表示・保存・外部送信しません。</div></div>
-    <div style="font-size:20px;font-weight:900;margin-top:10px">読取済み：<span id="rxQrCount">${items.length}</span>個</div>
-    <div class="muted" id="rxQrBytes">合計データ長：約 ${total} bytes</div>
-    <div id="rxQrParts" style="margin-top:8px">${items.map((x,i)=>`<div class="rxNeedOk">✅ QR ${i+1}　約 ${x.bytes} bytes</div>`).join('') || '<div class="rxNeedWarn">QRコードを1つずつカメラ中央に映してください。</div>'}</div>
-    <div class="muted" style="margin-top:8px">同じQRを再度映しても重複カウントしません。複数ある場合は、1個読めたら次のQRへ移してください。</div>
-    <button class="primary" style="width:100%;margin-top:10px" onclick="finishRxQrMultiTest()">✅ 読み取りを終了して診断結果を見る</button>
-    <button style="width:100%;margin-top:8px" onclick="stopRxQrTest();rxQrSeen.clear();closeModal()">中止</button>`;
-}
-
-function refreshRxQrStatus(){
-  const items=[...rxQrSeen.values()];
-  const c=document.getElementById('rxQrCount'); if(c)c.textContent=items.length;
-  const b=document.getElementById('rxQrBytes'); if(b)b.textContent=`合計データ長：約 ${items.reduce((n,x)=>n+x.bytes,0)} bytes`;
-  const parts=document.getElementById('rxQrParts');
-  if(parts)parts.innerHTML=items.map((x,i)=>`<div class="rxNeedOk">✅ QR ${i+1}　約 ${x.bytes} bytes</div>`).join('');
-}
+let rxQrStream=null, rxQrBusy=false, rxQrDetector=null;
+let rxQrParts=[];
 
 async function startRxQrTest(){
- if(location.protocol!=='https:' && location.hostname!=='localhost'){alert('処方箋QRカメラはHTTPSで公開したページから利用してください。');return;}
+ if(location.protocol!=='https:' && location.hostname!=='localhost'){alert('処方箋QRカメラはHTTPS公開ページで利用してください。');return;}
  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){alert('このブラウザではカメラ機能を利用できません。');return;}
- if(!('BarcodeDetector' in window)){alert('このブラウザは標準の端末内QR読取に対応していません。');return;}
+ if(!('BarcodeDetector' in window)){alert('このブラウザは標準のQR読取に対応していません。');return;}
+ stopRxQrTest(); rxQrParts=[]; rxQrBusy=false;
  try{
-   rxQrSeen.clear(); rxQrBusy=false;
-   rxQrStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
-   modal.classList.remove('hide');
-   modalTitle.textContent='🔒 処方箋QR 複数読取テスト';
-   modalBody.innerHTML=`<video id="rxQrVideo" autoplay playsinline style="width:100%;border-radius:14px;margin-bottom:8px"></video>${rxQrStatusHtml()}`;
+   rxQrDetector=new BarcodeDetector({formats:['qr_code']});
+   rxQrStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+   modal.classList.remove('hide'); modalTitle.textContent='📄 JAHIS処方箋QR 手動読取';
+   modalBody.innerHTML=`
+   <div class="goodBox"><b>JAHIS処方箋QR用</b><div class="muted">QRコード Model 2を1個ずつ中央に大きく映し、「このQRを読む」を押します。自動連続解析はしません。</div></div>
+   <video id="rxQrVideo" autoplay playsinline muted style="width:100%;border-radius:14px;margin-top:10px;background:#111"></video>
+   <canvas id="rxQrCanvas" width="640" height="360" style="display:none"></canvas>
+   <div id="rxQrStatus" class="goodBox" style="margin-top:9px">カメラ準備中…</div>
+   <div id="rxQrPartList" class="muted" style="margin-top:7px">読取済み：0個</div>
+   <button id="rxQrReadBtn" class="primary" style="width:100%;margin-top:10px" onclick="captureRxQrPart()">📷 このQRを読む</button>
+   <button id="rxQrFinishBtn" style="width:100%;margin-top:8px" onclick="finishRxQrParts()" disabled>✅ すべて読んだので確認</button>
+   <button style="width:100%;margin-top:8px" onclick="stopRxQrTest();closeModal()">中止</button>`;
    const v=document.getElementById('rxQrVideo'); v.srcObject=rxQrStream;
-   const detector=new BarcodeDetector({formats:['qr_code']});
-   const scan=async()=>{
-     if(!rxQrStream)return;
-     if(rxQrBusy){rxQrTimer=setTimeout(scan,180);return;}
-     rxQrBusy=true;
-     try{
-       const video=document.getElementById('rxQrVideo');
-       if(video&&video.readyState>=2){
-         const codes=await detector.detect(video);
-         let added=false;
-         for(const code of codes){
-           const raw=code.rawValue||'';
-           if(raw && !rxQrSeen.has(raw)){
-             rxQrSeen.set(raw,{raw,bytes:new TextEncoder().encode(raw).length});
-             added=true;
-           }
-         }
-         if(added){haptic([20]);refreshRxQrStatus();showToast(`✅ QR ${rxQrSeen.size}個目を読み取りました`);}
-       }
-     }catch(e){
-       const m=document.getElementById('rxQrBytes'); if(m)m.textContent='読取処理を継続中です…';
-     }finally{rxQrBusy=false;}
-     rxQrTimer=setTimeout(scan,180);
-   };
-   rxQrTimer=setTimeout(scan,500);
+   await v.play().catch(()=>{}); setRxQrStatus('QRを1個だけ中央に大きく映して「このQRを読む」を押してください');
  }catch(e){stopRxQrTest();alert('カメラを起動できませんでした。Chromeのサイト設定でカメラ権限を確認してください。');}
 }
-
-function stopRxQrTest(){
- if(rxQrTimer){clearTimeout(rxQrTimer);rxQrTimer=null;}
- if(rxQrStream){rxQrStream.getTracks().forEach(t=>t.stop());rxQrStream=null;}
- rxQrBusy=false;
+function setRxQrStatus(t){const e=document.getElementById('rxQrStatus');if(e)e.textContent=t;}
+function refreshRxQrParts(){
+ const e=document.getElementById('rxQrPartList'); if(e)e.textContent=`読取済み：${rxQrParts.length}個`;
+ const f=document.getElementById('rxQrFinishBtn'); if(f)f.disabled=rxQrParts.length===0;
 }
-
-function finishRxQrMultiTest(){
- const items=[...rxQrSeen.values()];
- if(!items.length){alert('まだQRコードを読み取れていません。');return;}
- // 先に結果画面を描画し、その後カメラを停止する（Android Chrome対策）
- const total=items.reduce((n,x)=>n+x.bytes,0);
- const joined=items.map(x=>x.raw).join('\n');
- const japanese=/[\u3040-\u30ff\u3400-\u9fff]/.test(joined);
- const rxLike=/(Rp|処方|用法|錠|カプセル|mg|ｍｇ)/i.test(joined);
- modal.classList.remove('hide');
- modalTitle.textContent='✅ 複数QR 読取診断';
- modalBody.innerHTML=`
-   <div class="goodBox"><b>端末内で ${items.length} 個のQRを読み取れました</b><br>合計データ長：約 <b>${total} bytes</b><br>日本語文字：<b>${japanese?'検出':'未検出'}</b><br>処方情報らしい文字：<b>${rxLike?'検出':'形式解析が必要'}</b></div>
-   <div class="muted" style="margin-top:10px">QR本文、患者氏名、保険情報は画面表示・保存・外部送信していません。個数とデータ量だけを診断表示しています。</div>
-   <button class="primary" style="width:100%;margin-top:10px" onclick="rxQrSeen.clear();closeModal()">閉じる</button>`;
- requestAnimationFrame(()=>setTimeout(stopRxQrTest,120));
+async function captureRxQrPart(){
+ if(rxQrBusy||!rxQrStream||!rxQrDetector)return;
+ const btn=document.getElementById('rxQrReadBtn'); rxQrBusy=true; if(btn)btn.disabled=true;
+ try{
+   const v=document.getElementById('rxQrVideo'),c=document.getElementById('rxQrCanvas');
+   if(!v||!c||v.readyState<2||!v.videoWidth){setRxQrStatus('カメラ準備中です。少し待ってもう一度押してください');return;}
+   const maxW=520,scale=Math.min(1,maxW/v.videoWidth),w=Math.max(1,Math.round(v.videoWidth*scale)),h=Math.max(1,Math.round(v.videoHeight*scale));
+   c.width=w;c.height=h;const ctx=c.getContext('2d',{alpha:false,willReadFrequently:true});ctx.drawImage(v,0,0,w,h);
+   setRxQrStatus('解析中…（ここで長く止まる場合は端末のQR解析部分が原因です）');
+   await new Promise(r=>setTimeout(r,120));
+   const codes=await rxQrDetector.detect(c);
+   if(!codes||!codes.length){setRxQrStatus('QRを認識できませんでした。1個だけを中央に大きく映して再度押してください');return;}
+   const raw=(codes[0].rawValue||'');
+   if(!raw){setRxQrStatus('QRは検出しましたがデータを取得できませんでした');return;}
+   if(rxQrParts.includes(raw)){setRxQrStatus(`このQRは読取済みです（合計 ${rxQrParts.length}個）`);return;}
+   rxQrParts.push(raw); refreshRxQrParts();
+   setRxQrStatus(`✅ ${rxQrParts.length}個目を読み取りました。次のQRを映してください`);
+   if(navigator.vibrate)navigator.vibrate(60);
+ }catch(e){setRxQrStatus('⚠️ QR解析エラー：'+(e&&e.name?e.name:'不明')+(e&&e.message?' / '+e.message:''));}
+ finally{rxQrBusy=false;if(btn)btn.disabled=false;}
 }
-
-function showRxQrDiagnostic(raw){
- // 旧1個読取関数との互換用。複数読取診断へ統一。
- if(raw && !rxQrSeen.has(raw))rxQrSeen.set(raw,{raw,bytes:new TextEncoder().encode(raw).length});
- finishRxQrMultiTest();
+function finishRxQrParts(){
+ if(!rxQrParts.length)return;
+ const joined=rxQrParts.join('');
+ const bytes=(()=>{try{return new TextEncoder().encode(joined).length}catch(e){return joined.length}})();
+ const csvLike=/\r?\n/.test(joined)&&joined.includes(',');
+ stopRxQrTest();
+ modal.classList.remove('hide'); modalTitle.textContent='✅ JAHIS QR 読取確認';
+ modalBody.innerHTML=`<div class="goodBox"><b>${rxQrParts.length}個のQRを読み取りました</b><br>結合データ量：約 <b>${bytes} bytes</b><br>CSV形式らしいデータ：<b>${csvLike?'検出':'未確認'}</b></div>
+ <div class="muted" style="margin-top:10px">QR本文や患者氏名は画面に表示せず、保存もしていません。次段階でJAHISレコードを解析して薬剤・用法・日数だけを登録候補として表示します。</div>
+ <button class="primary" style="width:100%;margin-top:10px" onclick="closeModal()">閉じる</button>`;
+ rxQrParts=[];
 }
+function stopRxQrTest(){rxQrBusy=false;if(rxQrStream){rxQrStream.getTracks().forEach(t=>t.stop());rxQrStream=null;}rxQrDetector=null;}
+function showRxQrDiagnostic(raw){/* 互換性維持 */}
 
 function closeModal(){if(dirty&&!confirm('保存していない変更があります。閉じますか？'))return;dirty=false;modal.classList.add('hide')}
 function finalCheck(){if(dirty){alert('未保存の変更があります');return}if(tasks.some(x=>!x.done)){alert('まだ未完了の作業があります');return}cur.s='ok';cur.l='薬剤師確認済み・交付OK';Object.keys(changeRecords).forEach(k=>delete changeRecords[k]);tasks=[];dirty=false;haptic([20,30,20]);showToast('✅ 薬剤師確認済み・交付OK');setTimeout(()=>tab(origin),450)}

@@ -1,0 +1,1534 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>在宅業務サポート v1.06</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif;background:linear-gradient(#edfbf6,#f7f8ff);color:#21313b}header{padding:18px;background:linear-gradient(135deg,#18a36d,#4bc89e);color:#fff;border-radius:0 0 24px 24px}main,header{max-width:760px;margin:auto}.sub{font-size:12px;opacity:.9}main{padding:14px}.card{background:#fff;border:1px solid #eaf1ef;border-radius:20px;padding:15px;margin:12px 0;box-shadow:0 5px 18px #355b6b12}.row{display:flex;justify-content:space-between;gap:8px;align-items:center}.tabs,.actions{display:flex;gap:8px;flex-wrap:wrap}.tabs button{flex:1}button{border:0;border-radius:14px;padding:11px 13px;font-weight:800;font-size:14px;background:#edf2f5;color:#33424b}.primary{background:linear-gradient(135deg,#168747,#27ad79);color:#fff}.badge{padding:5px 9px;border-radius:20px;font-size:12px;font-weight:800}.ok{background:#dcf8e9;color:#08733e}.danger{background:#ffe3e6;color:#b42536}.warn{background:#fff0cc;color:#9a6100}.pending{background:#e4efff;color:#2463a4}.hide{display:none}.muted{font-size:12px;color:#667085}.rx{border:1px solid #dce8e4;border-radius:15px;margin:10px 0;overflow:hidden}.rxhead{padding:9px 12px;background:#eef9f4;font-weight:850}.rxbody{padding:10px 12px}.drugline{padding:9px 0;border-bottom:1px dashed #dfe7e5}.drugline:last-child{border:0}.dose{float:right;font-weight:800}.task{border:1px solid #e7ecef;border-radius:15px;padding:12px;margin:9px 0}.task.done{background:#eaf9f0;border-color:#bce9ce}.task.locked{opacity:.55}.task button{width:100%;margin-top:8px}.progress{height:10px;background:#edf1f3;border-radius:99px;overflow:hidden}.progress div{height:100%;background:#20a464}.modal{position:fixed;inset:0;background:#0007;display:flex;align-items:flex-end;z-index:20}.modal.hide{display:none!important}.sheet{background:#fff;width:100%;max-width:760px;margin:auto;border-radius:24px 24px 0 0;padding:18px;max-height:85vh;overflow:auto}.choice{width:100%;text-align:left;margin:5px 0;background:#f3f7f8}input,select{width:100%;padding:11px;border:1px solid #ccd6dc;border-radius:11px;font-size:16px;margin:4px 0 9px}.changebox{margin-top:8px;padding:10px;background:#fff5f5;border-radius:12px}.saved{background:#eaf9f0;padding:9px;border-radius:10px;margin-top:8px;color:#08733e}
+
+.carLayer{position:fixed;left:0;right:0;top:78px;height:58px;z-index:50;pointer-events:none;overflow:hidden;display:none}
+.carLayer.run{display:block}.car{position:absolute;left:-70px;top:7px;font-size:38px;filter:drop-shadow(0 4px 3px #0002);animation:driveCar .78s cubic-bezier(.22,.8,.32,1) forwards}
+.carDust{position:absolute;left:-20px;top:31px;font-size:18px;animation:driveDust .78s ease-out forwards}
+@keyframes driveCar{0%{transform:translateX(0) rotate(-2deg)}45%{transform:translateX(52vw) rotate(2deg)}100%{transform:translateX(calc(100vw + 90px)) rotate(0)}}
+@keyframes driveDust{0%{transform:translateX(0);opacity:0}20%{opacity:1}100%{transform:translateX(calc(100vw + 70px));opacity:0}}20%{opacity:1}100%{transform:translateX(calc(100vw + 70px));opacity:0}}
+@keyframes pop{0%{transform:scale(.88);opacity:.4}70%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+@keyframes pulseDone{0%{transform:scale(1)}50%{transform:scale(.96)}100%{transform:scale(1)}}
+.task{transition:.28s ease}.task.done{animation:pop .28s ease;background:#eaf9f0;border-color:#bce9ce}
+.task button:active,.tabs button:active,.primary:active{transform:scale(.96)}
+.progress div{transition:width .45s cubic-bezier(.2,.8,.3,1)}
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,30px);opacity:0;z-index:80;background:#26343b;color:white;padding:11px 16px;border-radius:999px;font-weight:800;box-shadow:0 7px 24px #0004;transition:.25s}
+.toast.show{transform:translate(-50%,0);opacity:1}
+.readyGlow{background:linear-gradient(135deg,#f1eaff,#fff);border-color:#d9c8ff;animation:pop .35s ease}
+.undoBtn{background:#fff;color:#667085;border:1px solid #dce3e6!important}
+.sparkle{position:fixed;z-index:90;pointer-events:none;font-size:22px;animation:spark .75s ease-out forwards}
+@keyframes spark{0%{transform:translate(0,0) scale(.5);opacity:0}25%{opacity:1}100%{transform:translate(var(--x),var(--y)) scale(1.3);opacity:0}}
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.homeHero{background:linear-gradient(135deg,#eaf8ff,#fff);border-color:#cfeafb}
+.homePatient{position:relative;overflow:hidden}
+.daysBig{font-size:27px;font-weight:900;margin-top:4px}
+.stockGood{color:#08733e;font-weight:800}.stockWarn{color:#9a6100;font-weight:800}.stockBad{color:#b42536;font-weight:800}
+.stepper{display:grid;grid-template-columns:54px 42px 64px 42px 1fr;align-items:center;gap:6px;margin:9px 0}
+.stepper button{width:42px;height:42px;padding:0;font-size:21px}
+.stepper .num{text-align:center;font-size:19px;font-weight:900}
+.visitTask{padding:11px;border-radius:13px;background:#f6f8fa;margin:8px 0;transition:.25s}
+.visitTask.done{background:#eaf9f0}
+.visitTask button{float:right;padding:5px 9px;margin-top:-3px}
+.shortageBox{background:#fff0f1;border-left:4px solid #d94a59;padding:10px;border-radius:11px;margin-top:10px}
+.goodBox{background:#eaf9f0;border-left:4px solid #20a464;padding:10px;border-radius:11px;margin-top:10px}
+.homeStatusLine{padding:7px 0;border-bottom:1px dashed #e2e9ec}
+.homeStatusLine:last-child{border:0}
+@media(max-width:430px){.stepper{grid-template-columns:46px 40px 54px 40px 1fr;gap:4px}.stepper button{width:40px;height:40px}}
+
+
+.makeDays{font-size:31px;font-weight:950;letter-spacing:-1px}
+.settingBtn{background:#f3f6f8;color:#52616b;padding:8px 10px}
+.floatingAdd{width:100%;margin:10px 0;background:linear-gradient(135deg,#278fc5,#48b7df);color:#fff}
+.infoGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.infoTile{padding:10px;background:#f6f9fb;border-radius:12px}
+
+.typeFacility{background:#e9efff;color:#4057a8}.typeHome{background:#e7f8f0;color:#08734b}
+.todoName{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.homeRxActions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.homeRxActions button{padding:7px 9px;font-size:12px}
+
+.formBadge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:850;margin:4px 4px 0 0;background:#eef4f7;color:#42525b}
+.formPack{background:#e7f8f0;color:#08734b}.formHeat{background:#fff2df;color:#9a5c00}.formStaple{background:#f1eaff;color:#6a45a5}
+.formChoice{display:grid;grid-template-columns:1fr;gap:8px;margin:8px 0 14px}.formChoice label{border:1px solid #dce5e9;border-radius:12px;padding:11px;background:#fff}
+
+.rxGroup{border:1px solid #dfe8ec;border-radius:14px;margin:9px 0;overflow:hidden}
+.rxGroupHead{background:#f4f8fa;padding:9px 11px;font-weight:900}
+.rxGroupBody{padding:9px 11px}.rxDrug{padding:7px 0;border-bottom:1px dashed #e2e9ec}.rxDrug:last-child{border:0}
+.calHead{display:flex;align-items:center;justify-content:space-between;margin:8px 0}
+.calGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.calDow,.calDay{text-align:center;padding:7px 2px;border-radius:9px;font-size:12px}
+.calDow{font-weight:850;color:#687780}.calDay{background:#f5f7f8;min-height:31px}.calDay.empty{background:transparent}
+.calDay.set{background:#dff6e9;color:#08733e;font-weight:900}.calDay.end{outline:2px solid #19a363}
+.setLegend{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:12px}.setDot{width:13px;height:13px;border-radius:4px;background:#dff6e9;display:inline-block}
+
+.todoFilters{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+.todoFilters button.active{background:#26343b;color:#fff}
+.rxMeta{display:flex;gap:6px;flex-wrap:wrap;margin:5px 0}.rxMeta span{font-size:11px;background:#f1f5f7;padding:4px 7px;border-radius:999px}
+.limitMark{background:#fff0df!important;color:#9a5c00!important;font-weight:900;outline:2px solid #e89b2f}
+.suggestBox{background:#edf7ff;border-left:4px solid #3999cf;padding:10px;border-radius:11px;margin-top:9px}
+
+.visitPrev{background:#e9efff!important;color:#4057a8!important;font-weight:900;outline:2px solid #7388d4}
+.visitNext{background:#ffe8ef!important;color:#a52750!important;font-weight:900;outline:2px solid #db6488}
+.billingOk{background:#eaf9f0;border-left:4px solid #20a464;padding:10px;border-radius:11px;margin-top:8px}
+.billingNg{background:#fff0f1;border-left:4px solid #d94a59;padding:10px;border-radius:11px;margin-top:8px}
+.billingWarn{background:#fff8e5;border-left:4px solid #e1a72b;padding:10px;border-radius:11px;margin-top:8px}
+.bulkRow{display:grid;grid-template-columns:1fr 88px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #e5ecef}
+
+.historyItem{padding:9px 0;border-bottom:1px solid #e5ecef}.historyItem:last-child{border:0}
+.monthCount{font-size:24px;font-weight:950}.visitChip{display:inline-block;padding:5px 8px;border-radius:999px;background:#eef4f7;margin:3px;font-size:12px}
+
+.specialBox{background:#f5efff;border-left:4px solid #7b5cc7;padding:10px;border-radius:11px;margin-top:8px}
+.specialTags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.specialTags span{background:#eee6ff;color:#6548a6;border-radius:999px;padding:4px 7px;font-size:11px;font-weight:800}
+
+.quickDays{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:9px 0}
+.quickDays button{padding:9px 4px;font-size:12px}
+.remainCount{font-weight:900;font-size:16px}
+.remainingVisits{font-size:22px;font-weight:950}
+
+.rxNeedOk{background:#eaf9f0;border-left:4px solid #20a464;padding:10px;border-radius:11px;margin-top:8px}
+.rxNeedWarn{background:#fff1e8;border-left:4px solid #e77732;padding:10px;border-radius:11px;margin-top:8px}
+.rxNeedDanger{background:#fff0f1;border-left:4px solid #d94a59;padding:10px;border-radius:11px;margin-top:8px}
+.looseHelp{background:#f5f8fa;padding:9px;border-radius:10px;margin-bottom:8px}
+
+.calDay.pharmacyMade{background:#e8f0ff!important;color:#3456a4!important;font-weight:900}
+.calDay.rawPossible{background:#fff3df!important;color:#945b00!important;font-weight:900}
+.stageBox{display:grid;gap:7px;margin-top:9px}.stageLine{padding:9px 10px;border-radius:10px;background:#f5f8fa}
+
+.shareCard{border:1px solid #e4e8eb;border-radius:14px;padding:11px;margin:9px 0;background:#fff}
+.shareUrgent{border-left:5px solid #d94a59}.shareWait{border-left:5px solid #e6a323}.shareDone{opacity:.72}
+.shareMeta{font-size:12px;color:#65717a;margin-top:5px}.shareActions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.staffChip{display:inline-block;padding:5px 9px;border-radius:999px;background:#eef5f1;font-weight:800;font-size:12px}
+.audit{font-size:12px;border-left:2px solid #d8e0e4;padding-left:8px;margin:5px 0}
+</style>
+<meta name="theme-color" content="#087a52">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="./manifest.webmanifest">
+
+<style id="v100-safe-hotfix">
+#homeDetail .card:has(#prepTasks){display:none!important;}
+</style>
+</head><body>
+<div id="localPreviewNotice" class="card" style="display:none;border:1px solid #f1c86b;background:#fff9e8">
+ <b>🧪 ローカル確認モード</b>
+ <div class="muted">画面・入力機能は確認できます。カメラ（GS1／処方箋QR）はHTTPS公開後に有効になります。<div style="margin-top:6px"><button id="securityChip" onclick="showAccessSettings()" style="font-size:11px">🔐 使用者未選択</button></div></div>
+</div>
+
+<div id="carLayer" class="carLayer"><div class="carDust">💨</div><div class="car">🚗</div></div>
+<div id="toast" class="toast"></div>
+<header><b style="font-size:21px">🏠 在宅業務サポート</b><div class="sub">v1.06 セット済み最終日修正版</div></header><main>
+<div class="tabs"><button onclick="hideShareOverlay();tab('facility')">🏢 施設</button><button onclick="hideShareOverlay();openHomeWithCar()">🏠 個人在宅</button><button onclick="showPharmacyShare()">📣 情報共有</button><button onclick="hideShareOverlay();tab('todo')">⚠️ 要対応</button></div>
+
+<div id="todayPharmacyGlobal" class="card" style="margin-top:8px">
+ <div class="row">
+  <div><b style="font-size:18px">📌 今日の薬局</b><div class="muted">今日中に対応することを全画面で表示</div></div>
+  <span id="todayGlobalCount" class="badge danger">0件</span>
+ </div>
+ <div id="todayGlobalList" style="margin-top:8px"></div>
+</div>
+<section id="facility">
+<div class="card">
+  <div class="row"><b>🔒 処方箋QR 端末内テスト</b><span class="badge ok">保存しない</span></div>
+  <div class="muted" style="margin:7px 0">スマホのカメラでQRを直接読み取ります。画像・QR本文・患者情報は保存せず、外部APIにも送信しません。</div>
+  <div id="qrEnvStatus" class="muted" style="margin:7px 0"></div>
+  <button class="primary" style="width:100%" onclick="startRxQrTest()">📷 処方箋QRを端末内でテスト</button>
+</div>
+<div class="card"><div class="row"><b>ひなた老人ホーム</b><span class="badge danger" id="facilityCount">要対応 2</span></div><div class="muted">前回処方で仮調剤 → 今回処方確定後に差分対応</div><details style="margin-top:12px"><summary class="muted" style="cursor:pointer;text-align:center">⚙️ 施設の管理操作</summary><button style="width:100%;margin-top:9px;background:#f4f5f7;color:#667085" onclick="resetAllStatus()">↻ 次回処方サイクルを開始</button></details></div><div id="patients"></div></section>
+<section id="home" class="hide">
+<div class="card homeHero">
+ <div class="row">
+  <div><b style="font-size:19px">🚗 個人在宅</b><div class="muted">訪問準備・残薬・次回まで足りるかを管理</div></div>
+  <span class="badge pending" id="homeCount">3名</span>
+ </div>
+</div>
+<button class="floatingAdd" onclick="hideShareOverlay();openHomeRegister()">＋ 👤 個人在宅患者を登録</button>
+<div id="homePatients"></div>
+</section>
+
+<section id="homeDetail" class="hide">
+<button onclick="tab('home')">← 個人在宅一覧へ</button>
+
+<div class="card">
+ <div class="row"><div><b id="hName" style="font-size:20px"></b><div id="hVisit" class="muted"></div></div><span id="hStatus" class="badge"></span></div>
+ <div class="actions" style="margin-top:10px"><button class="settingBtn" onclick="openHomeSettings()">⚙️ 患者設定</button><button class="settingBtn" onclick="changeNextVisit()">📅 次回訪問日を変更</button></div>
+</div>
+
+<div class="card">
+ <b>🧮 現在の残薬から作れる日数<br><span class="muted" style="font-weight:400">（薬局にある一包化済み＋一包化前）</span></b>
+ <div class="makeDays" id="makeDays"></div>
+ <div id="makeReason" class="muted"></div>
+ <div id="makeCompare"></div>
+</div>
+
+<div class="card">
+ <b>📅 次回訪問まで</b>
+ <div class="daysBig" id="hDays"></div>
+ <div id="hShortage"></div>
+</div>
+
+<div class="card">
+ <div class="row"><b>🏥 次回訪問までの処方依頼チェック</b><span id="rxNeedBadge" class="badge pending"></span></div>
+ <div id="rxNeedCheck"></div>
+</div>
+
+<div class="card">
+ <div class="row"><b>💊 登録薬剤</b><span class="badge pending">処方箋形式</span></div>
+ <div id="homeRxList"></div>
+ <div class="actions"><button onclick="bulkStockEdit()">📦 全薬剤の残薬を一括編集</button><button class="primary" onclick="openHomeDrugRegister()">＋ 💊 薬品を登録</button></div>
+</div>
+
+<div class="card" id="homeCareTaskCard">
+ <div class="row"><b>⚠️ 登録薬剤変更・要対応</b><span id="homeCareTaskStatus" class="badge pending"></span></div>
+ <div id="homeCareTasks"></div>
+</div>
+
+<div class="card">
+ <div class="row"><b>📦 一包化 残セット</b><span class="badge pending">＋ / −で入力</span></div><div id="madePackRemainBox" style="margin-top:10px;padding:12px;border-radius:12px;background:#f7fafb">
+ <div class="row"><span>🏪 薬局保管の一包化残</span><b id="madePackRemainDays" style="font-size:22px">0日分</b></div>
+ <div class="muted">＋／−で全体、または朝・昼・夕・寝る前ごとに変更できます。</div>
+ <div class="stepper" style="margin-top:8px"><b>全体</b><button onclick="madePackAllStep(-1)">−</button><span class="num" id="madePackAllNum">0</span><button onclick="madePackAllStep(1)">＋</button></div>
+ <div id="madePackUseRows"></div>
+ <div class="muted" id="madePackRemainUntil" style="margin-top:6px">作成可能最終日に反映します</div>
+</div>
+</div>
+
+<div class="card">
+ <div class="row"><b>📦 個別管理する薬・持参薬</b><span id="looseCountBadge" class="badge pending">0件</span></div>
+ <div class="looseHelp"><b>頓服は「登録薬剤」で登録すると薬品名だけ自動でここにも追加されます。</b><br>🏪登録薬剤＝薬局保管数、🏠ここ＝患者宅残数として別々に管理します。</div>
+ <div id="looseRows"></div>
+ <button style="width:100%;margin-top:8px" onclick="addLoose()">＋ 個別管理薬を追加</button>
+</div>
+
+<div class="card">
+ <div class="row"><b>📚 訪問履歴</b><button onclick="addVisitHistory()">＋ 訪問を追加</button></div>
+ <div id="visitMonthSummary"></div>
+ <div id="visitHistoryList"></div>
+</div>
+
+<div class="card">
+ <div class="row"><b>🧾 訪問算定チェック</b><span id="insuranceBadge" class="badge pending"></span></div>
+ <div id="billingCheck"></div>
+ <div class="muted" style="margin-top:8px">※ 訪問間隔・回数の簡易チェックです。通院困難性、医師の指示、他薬局との重複、対象患者、月内算定回数など他の算定要件は別途確認してください。</div>
+</div>
+
+
+
+<div class="card">
+ <div class="row"><b>🗓️ 患者宅へのセット状況</b><span id="setThroughBadge" class="badge ok"></span></div>
+ <div class="muted">実際に患者宅へセット済みの最終日を表示します。</div>
+ <div class="calHead"><button onclick="moveSetMonth(-1)">‹</button><b id="setMonthTitle"></b><button onclick="moveSetMonth(1)">›</button></div>
+ <div id="setCalendar"></div>
+ <div id="makeLimitSummary"></div>
+ <div class="setLegend"><span>🟢 患者宅</span>　<span>🔵 薬局一包化済み</span>　<span>🟠 バラ残薬で作成可</span>　<span>🔴 次回訪問</span>　<span>💊 最終日</span></div>
+ <button style="width:100%;margin-top:9px" onclick="changeSetThrough()">📅 セット済み最終日を変更</button>
+ <div id="pharmacyMadeBalance" class="stageLine" style="margin-top:8px">🏪 薬局保管の一包化残日数：--</div>
+ <button style="width:100%;margin-top:7px" onclick="changePharmacyMadeDays()">🏪 薬局保管の一包化済み日数を変更</button>
+</div>
+
+<div class="card">
+ <div class="row"><b>🚗 次回訪問の準備</b><span id="prepCount" class="badge warn"></span></div>
+ <div class="muted">持参するもの・回収するものだけを管理します。訪問記録は電子薬歴側で行う想定です。</div>
+ <div id="prepTasks"></div>
+ <button class="primary" style="width:100%;margin-top:9px" onclick="completePrep()">訪問準備を確認</button>
+</div>
+</section>
+<section id="todo" class="hide"><div class="todoFilters">
+<button id="tfAll" class="active" onclick="clearUnifiedNeedsShareFilter();setTodoFilter('all')">すべて <b id="tcAll"></b></button>
+<button id="tfFacility" onclick="clearUnifiedNeedsShareFilter();setTodoFilter('facility')">🏢 施設 <b id="tcFacility"></b></button>
+<button id="tfHome" onclick="clearUnifiedNeedsShareFilter();setTodoFilter('home')">🏠 在宅 <b id="tcHome"></b></button>
+<button id="needsFilterShare" onclick="setNeedsFilterShare()">📣 情報共有 <span id="needsShareCount">0</span></button></div>
+<div id="todos"></div></section>
+<section id="detail" class="hide">
+<button onclick="goBack()">← 一覧へ</button>
+<div class="card"><div class="row"><div><b id="pname" style="font-size:19px"></b><div id="proom" class="muted"></div></div><span id="pstatus" class="badge"></span></div></div>
+<div class="card" id="todoCard"><b>📋 この患者さんでやること</b><div id="taskList"></div><div class="progress"><div id="bar"></div></div><div id="prog" class="muted"></div></div>
+<div class="card"><b>📄 今回の処方</b><div class="muted">今回処方と前回登録内容を確認してください</div><div class="actions" style="margin-top:10px"><button class="primary" onclick="prescriptionSame()">✅ 処方変更なし</button><button onclick="prescriptionChanged()">🔄 処方変更あり</button></div><div id="prescriptionState" class="muted" style="margin-top:8px"></div></div>
+<div class="card"><div class="row"><b>💊 登録薬剤</b><span class="badge pending">処方箋形式</span></div><div id="rxList"></div><button class="primary" style="width:100%" onclick="openRegister()">＋ 💊 薬品を登録</button></div>
+<div class="card"><b>📦 一包化セット</b><p>朝 <b>14</b>　昼 <b>14</b>　夕 <b>14</b>　寝前 <b>0</b> セット</p></div>
+<div class="card"><b>👨‍⚕️ 薬剤師 最終確認</b><div class="muted">全タスク完了後のみ交付OKにできます</div><button class="primary" style="width:100%;margin-top:9px" onclick="finalCheck()">最終確認 → 交付OK</button></div>
+</section></main>
+<div id="modal" class="modal hide"><div class="sheet"><div class="row"><b id="modalTitle">薬品を登録</b><button onclick="closeModal()">✕</button></div><div id="modalBody"></div></div></div>
+<script>
+const P=[{id:1,n:'デモ 山田',r:'101号室',s:'ok',l:'変更なし・照合済み'},{id:2,n:'デモ 佐藤',r:'102号室',s:'danger',l:'1剤中止・未対応'},{id:3,n:'デモ 鈴木',r:'103号室',s:'warn',l:'再鑑査待ち'},{id:4,n:'デモ 高橋',r:'104号室',s:'pending',l:'処方未確定'}];
+let drugs=[
+{id:1,name:'アムロジピン錠5mg',qty:'1錠',use:'朝食後',form:'一包化',days:14,rp:1},
+{id:2,name:'テルミサルタン錠40mg',qty:'1錠',use:'朝食後',days:14,rp:1},
+{id:3,name:'ランソプラゾールOD錠15mg',qty:'1錠',use:'朝食後',days:14,rp:1},
+{id:4,name:'ボグリボースOD錠0.3mg「サワイ」',qty:'1錠',use:'毎食直前',days:14,rp:2}
+];let cur=null,origin='facility',tasks=[],dirty=false;const changeRecords={};
+
+function resetAllStatus(){
+ modal.classList.remove('hide');modalTitle.textContent='⚠️ 次回処方サイクルを開始';
+ modalBody.innerHTML=`<div class="card" style="box-shadow:none;margin:8px 0;background:#fff7e8">
+ <b>施設全員を「今回処方 確認待ち」に戻します。</b>
+ <p class="muted">登録薬剤は削除されません。中止・増量・減量などの登録薬剤情報もそのまま残ります。</p>
+ <p><b>対象：</b>ひなた老人ホーム　全${P.length}名</p>
+ </div>
+ <label style="display:block;padding:10px 0"><input id="resetAgree" type="checkbox" style="width:auto;margin-right:8px">内容を確認しました</label>
+ <button id="resetExec" disabled style="width:100%;background:#d8dde2;color:#7a838b" onclick="executeReset()">↻ 全員を確認待ちに戻す</button>`;
+ setTimeout(()=>{let a=document.getElementById('resetAgree'),b=document.getElementById('resetExec');a.onchange=()=>{b.disabled=!a.checked;b.className=a.checked?'primary':''}},0);
+}
+function executeReset(){
+ P.forEach(p=>{p.s='pending';p.l='今回処方 確認待ち'});
+ tasks=[];Object.keys(changeRecords).forEach(k=>delete changeRecords[k]);
+ if(cur){cur.s='pending';cur.l='今回処方 確認待ち';pstatus.className='badge pending';pstatus.textContent=cur.l;renderTasks();let ps=document.getElementById('prescriptionState');if(ps)ps.textContent='今回処方の確認待ち';}
+ dirty=false;let ps=document.getElementById('prescriptionState');if(ps)ps.textContent='今回処方の確認待ち';modal.classList.add('hide');render();alert('↻ 次回処方サイクルを開始しました');
+}
+function prescriptionSame(){
+ Object.keys(changeRecords).forEach(k=>delete changeRecords[k]);tasks=[];dirty=false;
+ cur.s='ok';cur.l='処方変更なし・照合済み';pstatus.className='badge ok';pstatus.textContent=cur.l;
+ prescriptionState.innerHTML='✅ <b>処方変更なし</b> として登録しました';renderTasks();renderRx();render();
+}
+function prescriptionChanged(){
+ // A new change-entry session must not inherit completed changes/tasks from a prior cycle.
+ Object.keys(changeRecords).forEach(k=>delete changeRecords[k]);tasks=[];dirty=false;
+ cur.s='danger';cur.l='変更内容 未登録';pstatus.className='badge danger';pstatus.textContent=cur.l;
+ prescriptionState.innerHTML='🔄 <b>処方変更あり</b>：下の登録薬剤をタップして「中止・減量・増量・その他」を登録してください';
+ renderTasks();renderRx();render();
+}
+
+
+function haptic(ms=18){try{if(navigator.vibrate)navigator.vibrate(ms)}catch(e){}}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>t.classList.remove('show'),1500)}
+function openHomeWithCar(){
+ if(dirty&&!confirm('保存していない変更があります。移動しますか？'))return;
+ dirty=false;haptic(12);
+ const layer=document.getElementById('carLayer');
+ layer.classList.remove('run');void layer.offsetWidth;layer.classList.add('run');
+ setTimeout(()=>{tab('home');showToast('🚗 個人在宅へ到着！')},430);
+ setTimeout(()=>layer.classList.remove('run'),900);
+}
+function sparkle(){
+ const icons=['✨','✦','✨','★'];
+ for(let i=0;i<7;i++){let e=document.createElement('span');e.className='sparkle';e.textContent=icons[i%icons.length];e.style.left=(45+Math.random()*10)+'vw';e.style.top=(32+Math.random()*10)+'vh';e.style.setProperty('--x',(-80+Math.random()*160)+'px');e.style.setProperty('--y',(-80+Math.random()*120)+'px');document.body.appendChild(e);setTimeout(()=>e.remove(),800)}
+}
+
+function changeSummary(){
+ const arr=Object.values(changeRecords);
+ if(!arr.length)return '';
+ const labels=[];
+ if(arr.some(c=>c.type==='中止'))labels.push('中止');
+ if(arr.some(c=>c.type==='減量'||c.type==='増量'))labels.push('用量変更');
+ if(arr.some(c=>c.type==='その他'))labels.push('その他変更');
+ // Registered additions are represented separately if present in current tasks.
+ if(tasks.some(t=>t.kind==='add'))labels.push('薬剤追加');
+ return labels.join('＋');
+}
+function nextTaskStatus(){
+ const next=tasks.find(t=>!t.done);
+ if(!next)return '薬剤師 最終確認待ち';
+ const txt=next.t;
+ if(/抜き取/.test(txt))return '変更薬在庫処理待ち';
+ if(/減量|増量|修正/.test(txt))return '用量変更 作業待ち';
+ if(/追加/.test(txt))return '薬剤追加 作業待ち';
+ if(/再鑑査/.test(txt))return '再鑑査待ち';
+ if(/処理/.test(txt))return '変更薬在庫処理待ち';
+ return '作業待ち';
+}
+
+
+function cleanupFacilityRegisteredDrugsAfterTask(task){
+ if(!task||!task.done)return;
+ const text=String(task.t||'');
+ // Only a completed discontinuation should disappear entirely from registered drugs.
+ if(/中止|変更薬在庫処理/.test(text)){
+   const rec=Object.values(changeRecords||{}).find(c=>c && c.type==='中止' && (text.includes(c.name||'') || text.includes(c.drugName||'')));
+   if(rec){
+     const nm=rec.name||rec.drugName;
+     drugs=drugs.filter(d=>!(d.name===nm || d.id===rec.drugId || d.id===rec.id));
+   }else{
+     // Fallback: identify by exact registered drug name appearing in the task.
+     const hit=drugs.find(d=>text.includes(d.name));
+     if(hit)drugs=drugs.filter(d=>d.id!==hit.id);
+   }
+ }
+}
+
+function syncStatusFromTasks(){
+ if(!cur||!tasks.length)return;
+ const done=tasks.filter(x=>x.done).length;
+ if(done===tasks.length){
+   cur.s='pending';cur.l='薬剤師 最終確認待ち';
+   pstatus.className='badge pending';pstatus.textContent=cur.l;
+   document.getElementById('todoCard').classList.add('readyGlow');
+   sparkle();showToast('✨ 作業完了！薬剤師の最終確認待ち');haptic([20,35,20]);
+ }else{
+   cur.s=done>0?'warn':'danger';
+   cur.l=nextTaskStatus();
+   pstatus.className='badge '+cur.s;pstatus.textContent=cur.l;
+   document.getElementById('todoCard').classList.remove('readyGlow');
+ }
+ render();
+}
+
+const HOME=[
+ {id:101,n:'デモ 山田',visitDate:'2026-09-29',visitTime:'10:00',visit:'9/29 10:00',days:7,
+  packs:{朝:9,昼:9,夕:9,寝前:0},activePacks:{朝:true,昼:true,夕:true,寝前:false},
+  loose:[{n:'センノシド錠12mg',remain:10,need:7,perDay:1,inPack:false}],
+  prep:['朝・昼・夕 一包化 7セット','センノシド 7錠','お薬カレンダー交換'],rx:[{id:1101,name:'アムロジピン錠5mg',qty:'1錠',use:'朝食後',form:'一包化',days:14,rp:1},{id:1102,name:'センノシド錠12mg',qty:'1錠',use:'寝る前',form:'ヒート',days:14,rp:2}],careTasks:[],careStatus:'',setupThrough:'2026-09-30',prevVisit:'2026-09-22',insurance:'介護保険',visitHistory:['2026-09-08','2026-09-22'],special:{terminal:false,narcInj:false,hpn:false},pharmacyMadeDays:7},
+ {id:102,n:'デモ 佐藤',visitDate:'2026-09-27',visitTime:'11:30',visit:'9/27 11:30',days:5,
+  packs:{朝:3,昼:5,夕:5,寝前:0},activePacks:{朝:true,昼:true,夕:true,寝前:false},
+  loose:[{n:'フロセミド錠20mg',remain:4,need:5,perDay:1,inPack:true}],
+  prep:['朝・昼・夕 一包化 5セット','フロセミド 5錠','残薬を回収'],rx:[{id:1201,name:'フロセミド錠20mg',qty:'1錠',use:'朝食後',form:'一包化＋ヒート留め',days:14,rp:1}],careTasks:[],careStatus:'',setupThrough:'2026-09-27',prevVisit:'2026-09-21',insurance:'医療保険',visitHistory:['2026-09-07','2026-09-14','2026-09-21'],special:{terminal:true,narcInj:false,hpn:false},pharmacyMadeDays:5},
+ {id:103,n:'デモ 鈴木',visitDate:'2026-09-30',visitTime:'14:00',visit:'9/30 14:00',days:8,
+  packs:{朝:10,昼:10,夕:10,寝前:8},activePacks:{朝:true,昼:true,夕:true,寝前:true},
+  loose:[{n:'酸化マグネシウム錠330mg',remain:24,need:24,perDay:3,inPack:false}],
+  prep:['朝・昼・夕・寝前 一包化 8セット','お薬カレンダー交換'],rx:[{id:1301,name:'酸化マグネシウム錠330mg',qty:'3錠',use:'毎食後',form:'一包化',days:14,rp:1}],careTasks:[],careStatus:'',setupThrough:'2026-10-02',prevVisit:'2026-09-23',insurance:'介護保険',visitHistory:['2026-09-09','2026-09-23'],special:{terminal:false,narcInj:false,hpn:true},pharmacyMadeDays:8}
+];
+let homeCur=null;
+const prepDone={};
+
+
+
+function homeCareStatus(p){
+ const tasks=p.careTasks||[];
+ if(tasks.length){if(tasks.every(x=>x.done))return '薬剤師 最終確認待ち';return p.careStatus||'作業待ち'}
+ const sh=homeShortages(p);return sh.length?'残薬不足・薬剤準備待ち':'';
+}
+
+
+const HOME_USES=['起床時','朝食前','朝食後','昼食前','昼食後','夕食前','夕食後','朝・昼食前','朝・昼食後','朝・夕食前','朝・夕食後','昼・夕食前','昼・夕食後','毎食前','毎食後','寝る前','食間','頓服','その他'];
+function useOptions(sel){return HOME_USES.map(x=>`<option ${x===sel?'selected':''}>${x}</option>`).join('')}
+function useTimes(use){
+ if(['毎食前','毎食後'].includes(use))return 3;
+ if(['朝・昼食前','朝・昼食後','朝・夕食前','朝・夕食後','昼・夕食前','昼・夕食後'].includes(use))return 2;
+ if(use==='頓服'||use==='その他')return 1;
+ return 1;
+}
+
+function formClass(f){return f==='一包化'?'formPack':(f==='ヒート'?'formHeat':'formStaple')}
+function formIcon(f){return f==='一包化'?'📦':(f==='ヒート'?'💊':'📎')}
+
+
+function numQty(q){const m=String(q||'').match(/[\d.]+/);return m?+m[0]:1}
+function ensureRxInventory(d){
+ if(d.perDay==null)d.perDay=numQty(d.qty)*useTimes(d.use);
+ if(d.stock==null)d.stock=Math.round((d.days||0)*d.perDay);
+}
+function drugDays(d){ensureRxInventory(d);return d.perDay>0?Math.floor(d.stock/d.perDay):0}
+function homeDrugLimit(p){
+ const rx=(p.rx||[]).filter(d=>d.use!=='頓服');if(!rx.length)return {days:0,names:[]};
+ rx.forEach(ensureRxInventory);const ds=rx.map(d=>drugDays(d)),min=Math.min(...ds);
+ return {days:min,names:rx.filter(d=>drugDays(d)===min).map(d=>d.name)};
+}
+function addDaysISO(iso,n){const [y,m,d]=iso.split('-').map(Number),x=new Date(y,m-1,d);x.setDate(x.getDate()+n);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`}
+
+function renderHomeRx(){
+ const el=document.getElementById('homeRxList');if(!el||!homeCur)return;
+ const rx=homeCur.rx||[];if(!rx.length){el.innerHTML='<p class="muted">登録薬剤はありません。</p>';return}
+ rx.forEach(ensureRxInventory);const groups={};
+ rx.forEach(d=>{const f=d.form||'一包化',key=f==='一包化'?'pack|'+d.use:f+'|'+d.id;if(!groups[key])groups[key]={form:f,use:d.use,items:[]};groups[key].items.push(d)});
+ el.innerHTML=Object.values(groups).map(g=>{
+  const title=g.form==='一包化'?`📦 一包化　${g.use}`:`${formIcon(g.form)} ${g.form}　${g.use}`;
+  return `<div class="rxGroup"><div class="rxGroupHead">${title}</div><div class="rxGroupBody">${g.items.map(d=>`<div class="rxDrug"><div class="row"><b>${d.name}</b><span class="dose">1回 ${d.qty}</span></div><div class="rxMeta"><span>${String(d.use||'').trim()==='頓服'?'🏪薬局保管':'残薬'} ${d.stock}</span><span>1日 ${d.perDay}</span><span>あと ${drugDays(d)}日分</span></div><div class="homeRxActions"><button onclick="editHomeDrug(${d.id})">✏️編集</button><button onclick="adjustStock(${d.id})">📦残薬更新</button><button type="button" onclick="event.preventDefault();event.stopPropagation();homeDrugChange(${d.id},'中止')">🚫中止</button><button onclick="homeDrugChange(${d.id},'減量')">⬇️減量</button><button onclick="homeDrugChange(${d.id},'増量')">⬆️増量</button></div></div>`).join('')}</div></div>`;
+ }).join('');
+}
+
+function bulkStockEdit(){
+ const rx=homeCur.rx||[];rx.forEach(ensureRxInventory);
+ modal.classList.remove('hide');modalTitle.textContent='📦 全薬剤の残薬を一括編集';
+ modalBody.innerHTML=`<div class="goodBox"><b>何日分の残薬がありますか？</b><div class="muted">日数を1回入力すると、各薬剤の「1日使用量 × 日数」から残薬数を自動計算します。</div></div>
+ <label>残薬の日数</label><input id="bulkDays" type="number" min="0" step="1" value="14" oninput="previewBulkDays()">
+ <div class="quickDays"><button onclick="setBulkDays(7)">7日</button><button onclick="setBulkDays(14)">14日</button><button onclick="setBulkDays(21)">21日</button><button onclick="setBulkDays(28)">28日</button></div>
+ <div id="bulkPreview"></div>
+ <button class="primary" style="width:100%;margin-top:10px" onclick="saveBulkDays()">💾 この日数で全薬剤に反映</button>`;
+ previewBulkDays();
+}
+function setBulkDays(n){bulkDays.value=n;previewBulkDays()}
+function previewBulkDays(){
+ const days=Math.max(0,+document.getElementById('bulkDays')?.value||0),rx=homeCur.rx||[];
+ bulkPreview.innerHTML=rx.map(d=>{ensureRxInventory(d);const qty=Math.round(d.perDay*days*100)/100;return `<div class="bulkRow"><div><b>${d.name}</b><div class="muted">1日 ${d.perDay} × ${days}日</div></div><div class="remainCount">${qty}</div></div>`}).join('');
+}
+function saveBulkDays(){
+ const days=Math.max(0,+bulkDays.value||0);(homeCur.rx||[]).forEach(d=>{ensureRxInventory(d);d.stock=Math.round(d.perDay*days*100)/100});
+ closeModal();renderHomeDetail();renderHome();render();showToast(`📦 全薬剤を${days}日分の残薬に更新しました`);
+}
+function editHomeDrug(id){
+ const d=homeCur.rx.find(x=>x.id===id);ensureRxInventory(d);modal.classList.remove('hide');modalTitle.textContent='✏️ 登録薬剤を編集';
+ modalBody.innerHTML=`<label>薬品名</label><input id="edName" value="${d.name}"><label>1回量</label><input id="edQty" value="${d.qty}"><label>用法</label><select id="edUse">${useOptions(HOME_USES.includes(d.use)?d.use:"その他")}</select><label>その他の用法（必要時）</label><input id="edOtherUse" value="${HOME_USES.includes(d.use)?"":d.use}"><label>セット方法</label><select id="edForm"><option ${d.form==='一包化'?'selected':''}>一包化</option><option ${d.form==='ヒート'?'selected':''}>ヒート</option><option ${d.form==='一包化＋ヒート留め'?'selected':''}>一包化＋ヒート留め</option></select><label>現在の残薬数</label><input id="edStock" type="number" value="${d.stock}"><label>1日使用数</label><input id="edPerDay" type="number" step="0.5" value="${d.perDay}"><button class="primary" style="width:100%" onclick="saveHomeDrugEdit(${id})">💾 保存</button>`;
+}
+function saveHomeDrugEdit(id){const d=homeCur.rx.find(x=>x.id===id);d.name=edName.value;d.qty=edQty.value;d.use=edUse.value==='その他'?(edOtherUse.value.trim()||'その他'):edUse.value;d.form=edForm.value;d.perDay=numQty(d.qty)*useTimes(edUse.value);d.stock=Math.max(0,+edStock.value||0);d.perDay=Math.max(.01,+edPerDay.value||1);linkPrnToPatientHome(d);closeModal();renderHomeDetail();renderHome();render();showToast(d.use==='頓服'?'💾 頓服として保存。薬局と患者宅は別管理です':'💾 薬剤情報を更新しました')}
+function adjustStock(id){const d=homeCur.rx.find(x=>x.id===id);ensureRxInventory(d);const v=prompt(`${d.name}\n現在の実残薬数`,d.stock);if(v===null)return;d.stock=Math.max(0,+v||0);renderHomeDetail();renderHome();render();showToast('📦 残薬を更新しました')}
+function openHomeDrugRegister(){
+ modal.classList.remove('hide');modalTitle.textContent='💊 在宅患者の薬品を登録';
+ modalBody.innerHTML=`<button class="choice" onclick="alert('GS1スキャナー接続予定')">📷 GS1スキャン</button><button class="choice" onclick="alert('PTP文字認識接続予定')">🔎 PTP文字認識</button><button class="choice" onclick="homeDrugManual()">⌨️ 薬品名を入力して検索</button>`;
+}
+function homeDrugManual(){modalBody.innerHTML=`<label>薬品名</label><input id="hdrName"><label>1回量</label><input id="hdrQty" value="1錠"><label>用法</label><select id="hdrUse" onchange="toggleHdrOtherUse()">${useOptions("朝食後")}</select><input id="hdrOtherUse" class="hide" placeholder="その他の用法を入力"><label>日数</label><input id="hdrDays" type="number" value="14"><label>薬のセット方法</label><div class="formChoice"><label><input type="radio" name="hdrForm" value="一包化" checked style="width:auto"> 📦 一包化</label><label><input type="radio" name="hdrForm" value="ヒート" style="width:auto"> 💊 ヒート（PTP）</label><label><input type="radio" name="hdrForm" value="一包化＋ヒート留め" style="width:auto"> 📎 一包化にヒートをホッチキス留め</label></div><button class="primary" style="width:100%" onclick="saveHomeDrug()">💾 この薬を登録</button>`}
+function toggleHdrOtherUse(){hdrOtherUse.classList.toggle('hide',hdrUse.value!=='その他')}
+
+function saveHomeDrug(){
+ if(!hdrName.value.trim()){alert('薬品名を入力してください');return}
+ homeCur.rx=homeCur.rx||[];let rp=homeCur.rx.length?Math.max(...homeCur.rx.map(x=>x.rp))+1:1;
+ const form=document.querySelector('input[name="hdrForm"]:checked')?.value||'一包化';
+ const finalUse=hdrUse.value==='その他'?(hdrOtherUse.value.trim()||'その他'):hdrUse.value; const pd=numQty(hdrQty.value)*useTimes(hdrUse.value);
+ const newDrug={id:Date.now(),name:hdrName.value.trim(),qty:hdrQty.value,use:finalUse,days:+hdrDays.value,rp,form,perDay:pd,stock:(+hdrDays.value||0)*pd};
+ homeCur.rx.push(newDrug);linkPrnToPatientHome(newDrug);
+ homeCur.careTasks=homeCur.careTasks||[];
+ homeCur.careTasks.push({
+   id:'hc_'+Date.now()+'_add',kind:'drugChange',changeType:'新規追加',
+   drugId:newDrug.id,drugName:newDrug.name,newValue:newDrug.qty||'',newPerDay:newDrug.perDay||null,
+   stage:0,done:false,t:`${newDrug.name}：処方追加薬（新規登録）`
+ });
+ homeCur.careStatus='変更内容確認待ち';
+ closeModal();renderHomeDetail();renderHome();render();showToast(finalUse==='頓服'?'💊 頓服を登録。患者宅残数は別管理です':'💊 薬品を登録しました');
+}
+
+
+
+function homeTaskStageLabel(t){
+ const n=Math.max(0,Math.min(3,Number(t.stage)||0));
+ return ['変更内容確認待ち','薬剤処理待ち','薬剤師確認待ち','完了'][n];
+}
+function advanceHomeDrugTask(i){
+ const t=homeCur?.careTasks?.[i];if(!t)return;
+ t.stage=Math.max(0,Math.min(3,Number(t.stage)||0));
+
+ // ①変更内容確認 → ②薬剤処理 → ③薬剤師確認 → 完了
+ if(t.stage===0){
+   t.stage=1;
+   t.done=false;
+   homeCur.careStatus='薬剤処理待ち';
+ }else if(t.stage===1){
+   t.stage=2;
+   t.done=false;
+   homeCur.careStatus='薬剤師確認待ち';
+ }else if(t.stage===2){
+   t.beforeDrug=t.kind==='drugChange'
+     ? JSON.parse(JSON.stringify((homeCur.rx||[]).find(d=>d.id===t.drugId)||null))
+     : null;
+   t.stage=3;
+   t.done=true;
+   t.pharmacistConfirmed=true;
+   t.pharmacistConfirmed=true;
+   applyHomeDrugChangeAfterCompletedTask(t);
+   homeCur.careStatus=(homeCur.careTasks||[]).some(x=>!x.done)
+     ? '薬剤師確認待ち'
+     : '薬剤師 最終確認済み';
+ }
+ renderHomeDetail();renderHome();render();
+ setTimeout(forceShowHomeTaskArea,0);
+}
+
+function forceShowHomeTaskArea(){
+ const card=document.getElementById('homeCareTaskCard'),list=document.getElementById('homeCareTasks'),st=document.getElementById('homeCareTaskStatus');
+ if(!card||!list||!st||!homeCur)return;
+ card.style.display='block';
+ const a=homeCur.careTasks||[];
+ st.textContent=a.length?`${a.filter(x=>!(Number(x.stage)===3||x.done===true)).length}件`:'変更なし';
+ if(!a.length){list.innerHTML='<p class="muted">登録薬剤の中止・増減量・新規追加があると、ここに3段階の作業タスクが表示されます。</p>';return;}
+
+ list.innerHTML=a.map((x,i)=>{
+   let stage=Number.isFinite(Number(x.stage))?Number(x.stage):(x.done?3:0);
+   stage=Math.max(0,Math.min(3,stage));
+
+   // v0.95/0.96で誤って「完了」になった新規追加タスクを救済:
+   // 最終確認の記録が無い旧タスクは薬剤師確認待ちへ戻す。
+   if(x.kind==='drugChange' && x.changeType==='新規追加' && x.done===true && !x.pharmacistConfirmed){
+     stage=2; x.stage=2; x.done=false;
+   }
+
+   const step=(n,label)=>`<span class="badge ${stage>n?'ok':stage===n?'danger':''}" style="margin-right:4px">${stage>n?'✓ ':''}${label}</span>`;
+   let btn='';
+   if(stage===0) btn=`<button class="primary" onclick="advanceHomeDrugTask(${i})">✓ 変更内容を確認</button>`;
+   else if(stage===1) btn=`<button class="primary" onclick="advanceHomeDrugTask(${i})">✓ 薬剤処理を完了</button>`;
+   else if(stage===2) btn=`<button class="primary" style="width:100%;margin-top:10px" onclick="advanceHomeDrugTask(${i})">👨‍⚕️ 薬剤師確認を完了</button>`;
+   else btn=`<button class="undoBtn" onclick="undoHomeCareTask(${i})">↩ 完了を取り消す</button>`;
+
+   return `<div class="task ${stage===3?'done':''}">
+    <div class="row"><b>${stage===3?'✅':'⬜'} ${x.t}</b><span class="badge ${stage===3?'ok':'danger'}">${stage===3?'完了':homeTaskStageLabel({...x,stage})}</span></div>
+    <div style="margin:8px 0">${step(0,'①変更内容確認')}${step(1,'②薬剤処理')}${step(2,'③薬剤師確認')}</div>
+    ${x.kind==='drugChange'&&x.changeType!=='中止'&&x.changeType!=='新規追加'?`<div class="muted">変更後：1回 ${x.newValue} ／ 1日量 ${x.newPerDay}</div>`:''}
+    ${x.changeType==='新規追加'?`<div class="muted">新規登録：${x.drugName}</div>`:''}
+    ${btn}
+   </div>`;
+ }).join('');
+}
+
+function renderHomeChangeTasksNow(){ forceShowHomeTaskArea(); }
+function undoHomeCareTask(i){
+ if(!homeCur?.careTasks?.[i])return;
+ const t=homeCur.careTasks[i];
+ if(t.done&&t.kind==='drugChange'&&t.beforeDrug){
+   const idx=(homeCur.rx||[]).findIndex(d=>d.id===t.drugId);
+   if(idx>=0)homeCur.rx[idx]=JSON.parse(JSON.stringify(t.beforeDrug)); else homeCur.rx.push(JSON.parse(JSON.stringify(t.beforeDrug)));
+ }
+ t.done=false;t.pharmacistConfirmed=false;t.stage=Math.min(2,Number(t.stage)||2);homeCur.careStatus='作業待ち';
+ forceShowHomeTaskArea();renderHomeDetail();renderHome();render();setTimeout(forceShowHomeTaskArea,0);
+}
+
+function applyHomeDrugChangeAfterCompletedTask(task){
+ if(!homeCur||!task||task.kind!=='drugChange')return;
+ if(task.changeType==='新規追加')return;
+ const idx=(homeCur.rx||[]).findIndex(d=>d.id===task.drugId);
+ if(task.changeType==='中止'){
+   if(idx>=0)homeCur.rx.splice(idx,1);
+   return;
+ }
+ if(idx<0)return;
+ const d=homeCur.rx[idx];
+ if(task.newValue)d.qty=task.newValue;
+ if(task.newPerDay!=null)d.perDay=Math.max(.01,Number(task.newPerDay)||d.perDay||1);
+ // Remaining stock is not guessed/reset automatically; it remains the pharmacist-managed actual balance.
+}
+function completeHomeCareTask(i){advanceHomeDrugTask(i)}
+
+function homeDrugChange(id,type){
+ const d=(homeCur?.rx||[]).find(x=>x.id===id);if(!d)return;
+ homeCur.careTasks=homeCur.careTasks||[];
+ if(type==='中止'){
+   if(!confirm(`${d.name}を中止にしますか？\n処理完了後に登録薬剤から削除します。`))return;
+   if(!homeCur.careTasks.some(x=>!x.done&&x.kind==='drugChange'&&x.drugId===id&&x.changeType==='中止')){
+     homeCur.careTasks.push({id:'hc_'+Date.now(),kind:'drugChange',changeType:'中止',drugId:id,drugName:d.name,newValue:'',newPerDay:null,stage:0,done:false,t:`${d.name}：変更薬在庫処理`});
+   }
+   homeCur.careStatus='作業待ち';
+   forceShowHomeTaskArea();
+   setTimeout(()=>{renderHomeDetail();renderHome();render();forceShowHomeTaskArea()},0);
+   showToast('🚫 中止タスクを作成しました');
+   return;
+ }
+ openModal(`<h3>${type==='増量'?'⬆️':'⬇️'} ${d.name}：${type}</h3>
+  <label>変更後の1回量</label><input id="hchgQty" value="${d.qty||''}">
+  <label>変更後の1日量（錠/日）</label><input id="hchgPerDay" type="number" min="0.01" step="0.01" value="${Math.max(.01,+d.perDay||1)}">
+  <div class="muted">残薬数は変更しません。残薬はこれまで通り「📦残薬更新」で編集できます。</div>
+  <button class="primary" style="width:100%;margin-top:10px" onclick="saveHomeDrugChangeTask(${id},'${type}')">変更タスクを登録</button>`);
+}
+function saveHomeDrugChangeTask(id,type){
+ const d=(homeCur?.rx||[]).find(x=>x.id===id);if(!d)return;
+ const q=document.getElementById('hchgQty')?.value.trim()||'';
+ const pd=Math.max(.01,+document.getElementById('hchgPerDay')?.value||+d.perDay||1);
+ if(!q){alert('変更後の1回量を入力してください');return}
+ homeCur.careTasks=homeCur.careTasks||[];
+ let t=homeCur.careTasks.find(x=>!x.done&&x.kind==='drugChange'&&x.drugId===id&&x.changeType===type);
+ if(!t){t={id:'hc_'+Date.now(),kind:'drugChange',changeType:type,drugId:id,drugName:d.name,stage:0,done:false};homeCur.careTasks.push(t)}
+ t.newValue=q;t.newPerDay=pd;t.t=`${d.name}：${type}へ変更`;
+ homeCur.careStatus='作業待ち';
+ closeModal();
+ forceShowHomeTaskArea();
+ setTimeout(()=>{renderHomeDetail();renderHome();render();forceShowHomeTaskArea()},0);
+ showToast(`💊 ${type}タスクを作成しました`);
+}
+
+function monthKey(iso){return iso?iso.slice(0,7):''}
+function renderVisitHistory(){
+ if(!homeCur)return;homeCur.visitHistory=homeCur.visitHistory||[];
+ const mk=homeCur.visitDate?monthKey(homeCur.visitDate):monthKey(new Date().toISOString().slice(0,10));
+ const dates=[...homeCur.visitHistory].sort();
+ const monthDates=dates.filter(x=>monthKey(x)===mk);
+ visitMonthSummary.innerHTML=`<div class="infoGrid"><div class="infoTile"><div class="muted">${mk.replace('-','年')}月</div><div class="monthCount">${monthDates.length}回</div><div class="muted">訪問実績</div></div><div class="infoTile"><div class="muted">次回予定</div><div style="font-size:18px;font-weight:900">${homeCur.visitDate.slice(5).replace('-','/')}</div><div class="muted">${homeCur.insurance}</div></div></div>`;
+ visitHistoryList.innerHTML=dates.length?dates.slice().reverse().map((d,i)=>`<div class="historyItem"><div class="row"><b>🚗 ${d.replaceAll('-','/')}</b><button onclick="removeVisitHistory('${d}')">削除</button></div></div>`).join(''):'<p class="muted">訪問履歴はありません。</p>';
+}
+function addVisitHistory(){
+ modal.classList.remove('hide');modalTitle.textContent='🚗 訪問実績を追加';
+ modalBody.innerHTML=`<label>実際に訪問した日</label><input id="vhDate" type="date" value="${homeCur.prevVisit||''}"><button class="primary" style="width:100%" onclick="saveVisitHistory()">💾 訪問実績を登録</button>`;
+}
+function saveVisitHistory(){
+ if(!vhDate.value)return;homeCur.visitHistory=homeCur.visitHistory||[];if(!homeCur.visitHistory.includes(vhDate.value))homeCur.visitHistory.push(vhDate.value);
+ homeCur.visitHistory.sort();homeCur.prevVisit=homeCur.visitHistory[homeCur.visitHistory.length-1];closeModal();renderHomeDetail();render();showToast('🚗 訪問実績を登録しました');
+}
+function removeVisitHistory(d){
+ if(!confirm(d+' の訪問履歴を削除しますか？'))return;homeCur.visitHistory=(homeCur.visitHistory||[]).filter(x=>x!==d);homeCur.prevVisit=homeCur.visitHistory.length?[...homeCur.visitHistory].sort().at(-1):'';renderHomeDetail();render();showToast('訪問履歴を削除しました');
+}
+function weekMonday(iso){const x=new Date(iso+'T00:00:00'),w=(x.getDay()+6)%7;x.setDate(x.getDate()-w);return x.toISOString().slice(0,10)}
+function nextMondayISO(iso){
+ const x=new Date(iso+'T00:00:00'),day=x.getDay(),add=day===0?1:8-day;
+ x.setDate(x.getDate()+add);return x.toISOString().slice(0,10);
+}
+function jpMD(iso){return iso?iso.slice(5).replace('-','/'):''}
+
+function isoDateDiff(a,b){if(!a||!b)return null;const A=new Date(a+'T00:00:00'),B=new Date(b+'T00:00:00');return Math.round((B-A)/86400000)}
+function sameWeek(a,b){
+ const A=new Date(a+'T00:00:00'),B=new Date(b+'T00:00:00');
+ const mon=x=>{const d=new Date(x),w=(d.getDay()+6)%7;d.setDate(d.getDate()-w);d.setHours(0,0,0,0);return d};
+ return mon(A).getTime()===mon(B).getTime();
+}
+
+function specialInfo(p){
+ const sp=p.special||{},names=[];
+ if(sp.terminal)names.push('末期悪性腫瘍');
+ if(sp.narcInj)names.push('注射麻薬');
+ if(sp.hpn)names.push('中心静脈栄養');
+ return {active:names.length>0,names};
+}
+function countWeekVisits(h,next){return h.filter(x=>weekMonday(x)===weekMonday(next)).length}
+
+function renderBillingCheck(){
+ if(!homeCur)return;
+ const ins=homeCur.insurance||'介護保険',next=homeCur.visitDate,h=(homeCur.visitHistory||[]).slice().sort(),prev=h.length?h[h.length-1]:homeCur.prevVisit;
+ const diff=isoDateDiff(prev,next),monthVisits=h.filter(x=>monthKey(x)===monthKey(next)),sp=specialInfo(homeCur),weekCount=countWeekVisits(h,next);
+ insuranceBadge.textContent=ins+(sp.active?'・特例':'');
+ if(!next){billingCheck.innerHTML='<div class="billingWarn">⚠️ 次回訪問日を登録してください。</div>';return}
+ let html='';
+ if(sp.active){
+   const monthOk=monthVisits.length<8,weekOk=weekCount<2,ok=monthOk&&weekOk;
+   html=`<div class="specialBox"><b>⭐ 頻回訪問特例</b><div class="specialTags">${sp.names.map(x=>`<span>${x}</span>`).join('')}</div></div>
+   <div class="${ok?'billingOk':'billingNg'}"><b>${ok?'✅':'⚠️'} ${ins==='介護保険'?'居宅療養管理指導費':'在宅患者訪問薬剤管理指導料'}：${ok?'頻回訪問の回数要件上は算定候補':'週/月の回数を要確認'}</b><br>
+   今月実績 <b>${monthVisits.length}回</b> → 次回を含め <b>${monthVisits.length+1}回目</b><br>次回と同じ週の実績 <b>${weekCount}回</b> → 次回を含め <b>${weekCount+1}回目</b><br>
+   <div style="margin-top:8px">今月あと <span class="remainingVisits">${Math.max(0,8-monthVisits.length)}</span> 回 / 今週あと <span class="remainingVisits">${Math.max(0,2-weekCount)}</span> 回</div><span class="muted">特例対象：暦週（月曜〜日曜）で週2回・月8回を上限に簡易判定。</span></div>`;
+ }else if(ins==='介護保険'){
+   const monthlyOk=monthVisits.length<4,intervalOk=!prev||diff>=6,ok=monthlyOk&&intervalOk,earliest=prev?addDaysISO(prev,6):'';
+   html=`<div class="${ok?'billingOk':'billingNg'}"><b>${ok?'✅':'⚠️'} 居宅療養管理指導費：${ok?'通常要件上は算定候補':'算定回数・間隔を要確認'}</b><br>今月実績 <b>${monthVisits.length}回</b> → 次回を含め <b>${monthVisits.length+1}回目</b>${prev?`<br>直前訪問 ${jpMD(prev)} → 次回 ${jpMD(next)}（${diff}日後）<br><b>最短算定候補日：${jpMD(earliest)}</b>`:''}<br><div style="margin-top:8px">今月あと <span class="remainingVisits">${Math.max(0,4-monthVisits.length)}</span> 回</div><span class="muted">介護保険：算定する日の間隔6日以上として判定。</span></div>`;
+ }else{
+   const monthlyOk=monthVisits.length<4,sameWeekOk=weekCount===0,ok=monthlyOk&&sameWeekOk;
+   const weekStart=weekMonday(next),weekEnd=addDaysISO(weekStart,6),nextWeek=nextMondayISO(next);
+   html=`<div class="${ok?'billingOk':'billingNg'}"><b>${ok?'✅':'⚠️'} 在宅患者訪問薬剤管理指導料：${ok?'通常要件上は算定候補':'週/月の回数を要確認'}</b><br>今月実績 <b>${monthVisits.length}回</b> → 次回を含め <b>${monthVisits.length+1}回目</b><br>対象週：<b>${jpMD(weekStart)}（月）〜${jpMD(weekEnd)}（日）</b><br>この週の実績：<b>${weekCount}回</b>${weekCount>0?`<br><b>次の週は ${jpMD(nextWeek)}（月）から</b>`:''}<br><div style="margin-top:8px">今月あと <span class="remainingVisits">${Math.max(0,4-monthVisits.length)}</span> 回 / 今週あと <span class="remainingVisits">${Math.max(0,1-weekCount)}</span> 回</div><span class="muted">令和8年度：暦週（月曜〜日曜）ごとに週1回として簡易判定。</span></div>`;
+ }
+ billingCheck.innerHTML=html;
+}
+let setCalView='';
+function renderSetCalendar(){
+ if(!homeCur)return;
+ const base=homeCur.setupThrough||homeCur.visitDate;
+ if(!setCalView)setCalView=base.slice(0,7);
+ const [y,m]=setCalView.split('-').map(Number),first=new Date(y,m-1,1).getDay(),last=new Date(y,m,0).getDate();
+ const tp=homeCur.setupThrough?homeCur.setupThrough.split('-').map(Number):null;
+ setMonthTitle.textContent=`${y}年 ${m}月`;
+ setThroughBadge.textContent=tp?`${tp[1]}/${tp[2]}までセット済み`:'未登録';
+ let html='<div class="calGrid">'+['日','月','火','水','木','金','土'].map(x=>`<div class="calDow">${x}</div>`).join('');
+ for(let i=0;i<first;i++)html+='<div class="calDay empty"></div>';
+ for(let d=1;d<=last;d++){
+   const cur=new Date(y,m-1,d),end=tp?new Date(tp[0],tp[1]-1,tp[2]):null,set=end&&cur<=end,isEnd=end&&cur.getTime()===end.getTime();
+   const lim=homeCur.setupThrough?homeDrugLimit(homeCur):{days:0,names:[]},made=homeCur.pharmacyMadeDays||0;
+   const madeEnd=homeCur.setupThrough?addDaysISO(homeCur.setupThrough,made):'',limISO=madeEnd?addDaysISO(madeEnd,lim.days):'';
+   const curISO=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,isMade=madeEnd&&curISO>homeCur.setupThrough&&curISO<=madeEnd,isRaw=limISO&&curISO>madeEnd&&curISO<=limISO,isLim=curISO===limISO,isPrev=curISO===homeCur.prevVisit,isNext=curISO===homeCur.visitDate;
+   html+=`<div class="calDay ${set?'set':''} ${isMade?'pharmacyMade':''} ${isRaw?'rawPossible':''} ${isEnd?'end':''} ${isLim?'limitMark':''} ${isPrev?'visitPrev':''} ${isNext?'visitNext':''}">${d}${isPrev?'<br>前回':''}${isNext?'<br>次回':''}${isLim?'<br>💊':''}</div>`;
+ }
+ setCalendar.innerHTML=html+'</div>';
+ if(document.getElementById('pharmacyMadeBalance'))pharmacyMadeBalance.innerHTML=`🏪 薬局保管の一包化残日数：<b>${homeCur.pharmacyMadeDays||0}日分</b>`;
+ const lim=homeDrugLimit(homeCur),made=homeCur.pharmacyMadeDays||0,madeEnd=homeCur.setupThrough?addDaysISO(homeCur.setupThrough,made):'',limitDate=madeEnd?addDaysISO(madeEnd,lim.days):'';
+ makeLimitSummary.innerHTML=homeCur.setupThrough&&lim.names.length?`<div class="stageBox"><div class="stageLine">🟢 患者宅セット済み：<b>${homeCur.setupThrough.slice(5).replace('-','/')}まで</b></div><div class="stageLine">🔵 薬局で一包化済み：<b>${made}日分</b>${made?`（${madeEnd.slice(5).replace('-','/')}まで）`:''}</div><div class="stageLine">🟠 一包化前の残薬：<b>${lim.days}日分作成可能</b></div><div class="suggestBox"><b>💊 合計の作成可能最終日：${limitDate.slice(5).replace('-','/')}</b><br><span class="muted">ボトルネック：${lim.names.join('・')}</span></div></div>`:'';
+}
+function moveSetMonth(n){let [y,m]=setCalView.split('-').map(Number);m+=n;if(m<1){m=12;y--}if(m>12){m=1;y++}setCalView=`${y}-${String(m).padStart(2,'0')}`;renderSetCalendar()}
+
+function changePharmacyMadeDays(){
+ modal.classList.remove('hide');modalTitle.textContent='🏪 薬局保管の一包化済み';
+ modalBody.innerHTML=`<label>薬局ですでに一包化して保管している日数</label><input id="pmdDays" type="number" min="0" step="1" value="${homeCur.pharmacyMadeDays||0}"><div class="muted">一包化前のバラ残薬とは別に入力します。</div><button class="primary" style="width:100%;margin-top:10px" onclick="savePharmacyMadeDays()">💾 保存</button>`;
+}
+function savePharmacyMadeDays(){
+ homeCur.pharmacyMadeDays=Math.max(0,+pmdDays.value||0);
+ ensureMadePackByUse();
+ ['朝','昼','夕','寝前'].forEach(k=>{if(homeCur.activePacks?.[k]!==false)homeCur.pharmacyMadeByUse[k]=homeCur.pharmacyMadeDays});
+ closeModal();renderHomeDetail();renderHome();render();
+ showToast(`🏪 薬局保管の一包化残日数を${homeCur.pharmacyMadeDays}日分に更新しました`);
+}
+
+function changeSetThrough(){
+ modal.classList.remove('hide');modalTitle.textContent='🗓️ セット済み最終日';
+ modalBody.innerHTML=`<label>患者宅にセットしてある最終日</label><input id="hstDate" type="date" value="${homeCur.setupThrough||''}"><div class="muted">この日まで患者宅へのセットが完了しているとして表示します。</div><button class="primary" style="width:100%;margin-top:10px" onclick="saveSetThrough()">💾 セット状況を保存</button>`;
+}
+function saveSetThrough(){
+ const input=document.getElementById('hstDate');
+ const newDate=input ? input.value : '';
+ if(!newDate){alert('セット済み最終日を選択してください');return;}
+ const oldDate=homeCur.setupThrough||'';
+ if(oldDate&&newDate>oldDate){
+   const moved=Math.max(0,isoDateDiff(oldDate,newDate));
+   const available=homeCur.pharmacyMadeDays||0;
+   if(moved>available){
+     alert(`薬局保管の一包化済みは ${available}日分です。\n患者宅セットを ${moved}日分進めるには不足しています。`);
+     return;
+   }
+   homeCur.pharmacyMadeDays=Math.max(0,available-moved);
+ ensureMadePackByUse();
+ ['朝','昼','夕','寝前'].forEach(k=>{if(homeCur.activePacks?.[k]!==false)homeCur.pharmacyMadeByUse[k]=Math.max(0,(+homeCur.pharmacyMadeByUse[k]||0)-moved)});
+ recalcMadePackDays();
+   homeCur.setupThrough=newDate;
+   setCalView=newDate.slice(0,7);
+   closeModal();renderHomeDetail();renderHome();render();
+   showToast(`🏠 ${moved}日分を患者宅へセット。🏪薬局保管は残り${homeCur.pharmacyMadeDays}日分です`);
+   return;
+ }
+ if(oldDate&&newDate<oldDate){
+   if(!confirm('セット済み最終日を過去方向へ変更します。\n薬局保管の一包化残日数は自動では増やしません。よろしいですか？'))return;
+ }
+ homeCur.setupThrough=newDate;setCalView=newDate.slice(0,7);closeModal();renderHomeDetail();renderHome();render();showToast('🗓️ セット済み最終日を更新しました');
+}
+function refreshVisitLabel(p){
+ const [y,m,d]=p.visitDate.split('-').map(Number);
+ p.visit=`${m}/${d}${p.visitTime?' '+p.visitTime:''}`;
+ // Prototype uses 2026-09-22 as the current demo date.
+ const base=new Date(2026,8,22),target=new Date(y,m-1,d);
+ p.days=Math.max(0,Math.ceil((target-base)/86400000));
+}
+
+
+
+function calcMakeable(p){
+ const rx=(p.rx||[]).filter(d=>d.use!=='頓服');
+ if(!rx.length)return {days:0,raw:0,made:(p.pharmacyMadeDays||0),name:'登録薬剤なし',names:[]};
+ rx.forEach(ensureRxInventory);
+ const raw=Math.min(...rx.map(drugDays));
+ const names=rx.filter(d=>drugDays(d)===raw).map(d=>d.name);
+ const made=Number(p.pharmacyMadeDays)||0;
+ return {
+   days:made+raw,
+   raw:raw,
+   made:made,
+   name:names.join('・')||'—',
+   names:names
+ };
+}
+
+function prescriptionNeed(p){
+ const rx=(p.rx||[]).filter(d=>d.use!=='頓服');if(!rx.length)return {state:'unknown',days:0,short:0,names:[]};
+ rx.forEach(ensureRxInventory);
+ const raw=Math.min(...rx.map(drugDays)),names=rx.filter(d=>drugDays(d)===raw).map(d=>d.name),made=p.pharmacyMadeDays||0,total=made+raw;
+ const need=Math.max(0,p.days||0),short=Math.max(0,need-total);
+ if(total<need)return {state:'need',days:total,raw,made,short,names};
+ if(total===need)return {state:'border',days:total,raw,made,short:0,names};
+ return {state:'ok',days:total,raw,made,short:0,names};
+}
+function renderPrescriptionNeed(){
+ const r=prescriptionNeed(homeCur),el=document.getElementById('rxNeedCheck');if(!el)return;
+ if(r.state==='unknown'){rxNeedBadge.className='badge pending';rxNeedBadge.textContent='未判定';el.innerHTML='<div class="rxNeedWarn">登録薬剤がないため判定できません。</div>';return}
+ if(r.state==='need'){
+   rxNeedBadge.className='badge danger';rxNeedBadge.textContent='処方依頼が必要';
+   el.innerHTML=`<div class="rxNeedDanger"><b>🔴 次回訪問までに薬が ${r.short}日分 不足します</b><br>薬局保管済み＋バラ残薬：合計 <b>${r.days}日分</b> ／ 次回訪問まで <b>${homeCur.days}日</b><br><span class="muted">最初になくなる：${r.names.join('・')}</span><br><b>→ 病院へ処方箋発行の依頼が必要です。</b></div>`;
+ }else if(r.state==='border'){
+   rxNeedBadge.className='badge warn';rxNeedBadge.textContent='余裕なし';
+   el.innerHTML=`<div class="rxNeedWarn"><b>🟠 次回訪問日までは足りますが予備がありません</b><br>薬局保管済み＋バラ残薬 <b>${r.days}日分</b> ／ 次回訪問まで <b>${homeCur.days}日</b><br><span class="muted">処方日・受取日がずれる場合は早めの処方依頼を検討。</span></div>`;
+ }else{
+   const spare=r.days-homeCur.days;
+   rxNeedBadge.className='badge ok';rxNeedBadge.textContent='処方依頼不要';
+   el.innerHTML=`<div class="rxNeedOk"><b>🟢 次回訪問までは現在の残薬で足ります</b><br>薬局保管済み＋バラ残薬 <b>${r.days}日分</b> ／ 次回訪問まで <b>${homeCur.days}日</b> ／ 予備 <b>${spare}日分</b><br><span class="muted">バラ残薬のボトルネック：${r.names.join('・')}</span></div>`;
+ }
+}
+
+function homeShortages(p){
+ const days=Math.max(0,Number(p.days)||0);
+ const shortages=[];
+
+ // 一包化済み残数：画面下部の「一包化 残セット」と同じ madePacks を直接参照。
+ // 次回訪問までの日数以上あれば不足表示しない。
+ if(typeof ensureMadePackByUse==='function')ensureMadePackByUse();
+ const made=p.madePacks||{};
+ const active=p.activePacks||{};
+ Object.entries(made).forEach(([use,val])=>{
+   if(active[use]===false)return;
+   const have=Math.max(0,Number(val)||0);
+   const lack=Math.max(0,days-have);
+   if(lack>0)shortages.push({type:'pack',name:use+'一包化',qty:lack,unit:'セット'});
+ });
+
+ // 一包化前の薬剤残数：
+ // 「残薬」÷「1日量」で判定せず、必要錠数をそのまま比較する。
+ // 頓服は日数ベースの不足判定から除外。
+ (p.rx||[]).forEach(d=>{
+   if(d.use==='頓服')return;
+   if(typeof ensureRxInventory==='function')ensureRxInventory(d);
+   const perDay=Math.max(0,Number(d.perDay)||0);
+   if(perDay<=0)return;
+   const have=Math.max(0,Number(d.stock)||0);
+   const need=days*perDay;
+   const lack=Math.max(0,Math.ceil(need-have));
+   if(lack>0)shortages.push({type:'drug',name:d.name,qty:lack,unit:'錠'});
+ });
+
+ return shortages;
+}
+function renderHome(){
+ const el=document.getElementById('homePatients'); if(!el)return;
+ document.getElementById('homeCount').textContent=HOME.length+'名';
+ el.innerHTML=HOME.map(p=>{
+   const sh=homeShortages(p),cs=homeCareStatus(p),sp=specialInfo(p),mh=(p.visitHistory||[]).filter(x=>monthKey(x)===monthKey(p.visitDate)).length;
+   const rem=Math.max(0,(sp.active?8:4)-mh);
+   const label=cs||'次回まで足ります';
+   const cls=cs?'danger':'ok';
+   return `<div class="card homePatient" onclick="openHomePatient(${p.id})">
+     <div class="row"><div><b>${p.n}</b><div class="muted">次回 ${p.visit} ・ あと${p.days}日</div></div><span class="badge ${cls}">${label}</span></div>
+     <div style="margin-top:9px">📦 朝 ${p.packs.朝}　昼 ${p.packs.昼}　夕 ${p.packs.夕}${p.activePacks.寝前?'　寝前 '+p.packs.寝前:''}</div>
+   </div>`;
+ }).join('');
+}
+function openHomePatient(id){
+ homeCur=HOME.find(x=>x.id===id);setCalView=(homeCur.setupThrough||homeCur.visitDate).slice(0,7);
+ ['facility','home','todo','detail'].forEach(x=>document.getElementById(x).classList.add('hide'));
+ document.getElementById('homeDetail').classList.remove('hide');
+ hName.textContent=homeCur.n; hVisit.textContent='次回訪問 '+homeCur.visit; hDays.textContent=`あと ${homeCur.days} 日`;
+ renderHomeDetail();
+}
+function renderHomeDetail(){
+ if(homeCur && typeof ensureMadePackByUse==='function' && typeof recalcMadePackDays==='function'){ensureMadePackByUse();recalcMadePackDays();}
+ setTimeout(renderHomeChangeTasksNow,0);
+ setTimeout(renderMadePackControls,0);
+ syncRegisteredPrnToPatientHome();
+ setTimeout(refreshMadePackRemain,0);
+ ensurePrnPatientHomeRows();
+ renderHomeRx();renderSetCalendar();renderVisitHistory();renderBillingCheck();renderPrescriptionNeed();
+ const sh=homeShortages(homeCur),mk=calcMakeable(homeCur);
+ const makeDaysEl=document.getElementById('makeDays');
+ const makeReasonEl=document.getElementById('makeReason');
+ const makeCompareEl=document.getElementById('makeCompare');
+ if(makeDaysEl)makeDaysEl.textContent=mk.days+'日分';
+ if(makeReasonEl)makeReasonEl.textContent='最初になくなる：'+mk.name;
+ const diff=mk.days-homeCur.days;
+ if(makeCompareEl)makeCompareEl.innerHTML=diff>=0?`<div class="goodBox">🟢 次回訪問まで${homeCur.days}日 → <b>${diff}日分余裕</b></div>`:`<div class="shortageBox">🔴 次回訪問まで${homeCur.days}日 → <b>${-diff}日分不足</b></div>`;
+ hStatus.className='badge '+(sh.length?'danger':'ok');
+ hStatus.textContent=sh.length?`不足 ${sh.length}件`:'次回まで足ります';
+ hShortage.innerHTML=sh.length
+   ? `<div class="shortageBox"><b>⚠️ 次回訪問までに不足</b>${sh.map(x=>`<div class="homeStatusLine">${x.label}　<b>${x.amount}</b></div>`).join('')}</div>`
+   : `<div class="goodBox"><b>✅ 現在の残薬で次回訪問まで足ります</b></div>`;
+
+ packRows.innerHTML=Object.entries(homeCur.packs).map(([k,v])=>{
+   const active=homeCur.activePacks[k];
+   const status=!active?'使用なし':(v<homeCur.days?`あと${homeCur.days-v}不足`:`予備${v-homeCur.days}`);
+   const cls=!active?'muted':(v<homeCur.days?'stockBad':'stockGood');
+   return `<div class="stepper"><b>${k}</b><button onclick="packStep('${k}',-1)">−</button><span class="num">${v}</span><button onclick="packStep('${k}',1)">＋</button><span class="${cls}">${status}</span></div>`;
+ }).join('');
+
+ ensurePrnHomeEntries();
+ const linked=homeCur.loose.filter(x=>x.rxId);
+ const manual=homeCur.loose.filter(x=>!x.rxId);
+ const linkedHtml=linked.map(x=>`<div class="drugline"><div class="row"><b>💊 ${x.n}</b><span class="badge ok">頓服</span></div><div class="muted">🏠 患者宅の残薬（薬局保管分とは別管理）</div><div class="stepper"><span>🏠患者宅</span><button onclick="homePrnStep(${x.rxId},-1)">−</button><span class="num">${x.remain||0}</span><button onclick="homePrnStep(${x.rxId},1)">＋</button><button onclick="editHomePrn(${x.rxId})">数値入力</button></div></div>`).join('');
+ const manualHtml=manual.map(x=>{const i=homeCur.loose.indexOf(x),bad=x.remain<x.need;return `<div class="drugline"><b>${x.n}</b><div class="muted">個別管理薬・次回訪問まで必要 ${x.need}</div><div class="stepper"><span></span><button onclick="looseStep(${i},-1)">−</button><span class="num">${x.remain}</span><button onclick="looseStep(${i},1)">＋</button><span class="${bad?'stockBad':'stockGood'}">${bad?(x.need-x.remain)+'不足':'十分'}</span></div></div>`}).join('');
+ looseRows.innerHTML=(linkedHtml+manualHtml)||'<p class="muted">個別管理する薬はありません。</p>';
+ looseCountBadge.textContent=homeCur.loose.length+'件';
+
+ renderHomeChangeTasksNow();
+ prepTasks.innerHTML=homeCur.prep.map((x,i)=>{
+   const key=homeCur.id+'-'+i,done=!!prepDone[key];
+   return `<div class="visitTask ${done?'done':''}"><b>${done?'✅':'⬜'} ${x}</b><button onclick="togglePrep(${i})">${done?'↩':'✓'}</button><div style="clear:both"></div></div>`;
+ }).join('');
+ const n=homeCur.prep.filter((_,i)=>prepDone[homeCur.id+'-'+i]).length;
+ prepCount.className='badge '+(n===homeCur.prep.length?'ok':'warn');
+ prepCount.textContent=`${n}/${homeCur.prep.length} 完了`;
+}
+function packStep(k,d){
+ homeCur.packs[k]=Math.max(0,homeCur.packs[k]+d); haptic(8); renderHomeDetail(); renderHome();
+}
+function ensurePrnHomeEntries(){
+ homeCur.loose=homeCur.loose||[];
+ (homeCur.rx||[]).filter(d=>String(d.use||'').trim()==='頓服').forEach(d=>{
+   if(!homeCur.loose.some(x=>x.rxId===d.id))homeCur.loose.push({rxId:d.id,n:d.name,remain:0,need:0,perDay:0,inPack:false,autoPrn:true});
+ });
+ homeCur.loose.forEach(x=>{if(x.rxId){const d=(homeCur.rx||[]).find(r=>r.id===x.rxId);if(d)x.n=d.name}});
+}
+function homePrnStep(rxId,delta){ensurePrnHomeEntries();const x=homeCur.loose.find(v=>v.rxId===rxId);if(!x)return;x.remain=Math.max(0,(+x.remain||0)+delta);haptic(8);renderHomeDetail();}
+function editHomePrn(rxId){ensurePrnHomeEntries();const x=homeCur.loose.find(v=>v.rxId===rxId);if(!x)return;const v=prompt(`${x.n}
+患者宅にある頓服の残数`,x.remain||0);if(v===null)return;x.remain=Math.max(0,+v||0);renderHomeDetail();showToast('🏠 患者宅の頓服残数を更新しました');}
+function looseStep(i,d){
+ homeCur.loose[i].remain=Math.max(0,homeCur.loose[i].remain+d); haptic(8); renderHomeDetail(); renderHome();
+}
+function addLoose(){
+ const n=prompt('個別に管理する薬品名'); if(!n)return;
+ const need=Math.max(0,+prompt('次回訪問までに必要な数量','7')||0);
+ const perDay=Math.max(0,+prompt('1日使用数（必要な場合）','1')||0);
+ const inPack=confirm('この薬を「残薬から作れる日数」の計算にも含めますか？');
+ homeCur.loose.push({n,remain:0,need,perDay,inPack}); renderHomeDetail(); renderHome();
+}
+
+function openHomeRegister(){
+ modal.classList.remove('hide');modalTitle.textContent='👤 個人在宅患者を登録';
+ modalBody.innerHTML=`<label>患者名</label><input id="hrName" placeholder="例：山田 太郎">
+ <label>保険区分</label><select id="hrInsurance"><option>介護保険</option><option>医療保険</option></select>
+ <label>頻回訪問の特例</label>
+ <label><input id="hrTerminal" type="checkbox" style="width:auto"> 末期の悪性腫瘍</label>
+ <label><input id="hrNarcInj" type="checkbox" style="width:auto"> 注射による麻薬の投与が必要</label>
+ <label><input id="hrHpn" type="checkbox" style="width:auto"> 中心静脈栄養法（HPN）</label>
+ <label>前回訪問日</label><input id="hrPrev" type="date">
+ <label>次回訪問予定日</label><input id="hrDate" type="date">
+ <label>訪問予定時刻（任意）</label><input id="hrTime" type="time">
+ <b>一包化の服薬パターン</b>
+ <label><input id="hrMorning" type="checkbox" checked style="width:auto"> 朝</label>
+ <label><input id="hrNoon" type="checkbox" checked style="width:auto"> 昼</label>
+ <label><input id="hrEvening" type="checkbox" checked style="width:auto"> 夕</label>
+ <label><input id="hrBed" type="checkbox" style="width:auto"> 寝前</label>
+ <button class="primary" style="width:100%;margin-top:10px" onclick="saveHomePatient()">💾 患者を登録</button>`;
+}
+function saveHomePatient(){
+ if(!hrName.value.trim()||!hrDate.value){alert('患者名と次回訪問予定日を入力してください');return}
+ const p={id:Date.now(),n:hrName.value.trim(),visitDate:hrDate.value,visitTime:hrTime.value,visit:'',days:0,
+ packs:{朝:0,昼:0,夕:0,寝前:0},activePacks:{朝:hrMorning.checked,昼:hrNoon.checked,夕:hrEvening.checked,寝前:hrBed.checked},
+ loose:[],prep:['一包化・持参薬を準備','残薬確認'],rx:[],careTasks:[],careStatus:'',setupThrough:'',prevVisit:hrPrev.value,insurance:hrInsurance.value,visitHistory:hrPrev.value?[hrPrev.value]:[],special:{terminal:hrTerminal.checked,narcInj:hrNarcInj.checked,hpn:hrHpn.checked},pharmacyMadeDays:0};
+ refreshVisitLabel(p);HOME.push(p);closeModal();renderHome();showToast('👤 患者を登録しました');
+}
+function openHomeSettings(){
+ modal.classList.remove('hide');modalTitle.textContent='⚙️ 患者設定';
+ modalBody.innerHTML=`<label>患者名</label><input id="hsName" value="${homeCur.n}">
+ <label>保険区分</label><select id="hsInsurance"><option ${homeCur.insurance==='介護保険'?'selected':''}>介護保険</option><option ${homeCur.insurance==='医療保険'?'selected':''}>医療保険</option></select>
+ <label>頻回訪問の特例</label>
+ <label><input id="hsTerminal" type="checkbox" ${homeCur.special?.terminal?'checked':''} style="width:auto"> 末期の悪性腫瘍</label>
+ <label><input id="hsNarcInj" type="checkbox" ${homeCur.special?.narcInj?'checked':''} style="width:auto"> 注射による麻薬の投与が必要</label>
+ <label><input id="hsHpn" type="checkbox" ${homeCur.special?.hpn?'checked':''} style="width:auto"> 中心静脈栄養法（HPN）</label>
+ <label>前回訪問日</label><input id="hsPrev" type="date" value="${homeCur.prevVisit||''}">
+ <label>次回訪問予定日</label><input id="hsDate" type="date" value="${homeCur.visitDate}">
+ <label>訪問予定時刻</label><input id="hsTime" type="time" value="${homeCur.visitTime||''}">
+ <b>一包化の服薬パターン</b>
+ <label><input id="hsMorning" type="checkbox" ${homeCur.activePacks.朝?'checked':''} style="width:auto"> 朝</label>
+ <label><input id="hsNoon" type="checkbox" ${homeCur.activePacks.昼?'checked':''} style="width:auto"> 昼</label>
+ <label><input id="hsEvening" type="checkbox" ${homeCur.activePacks.夕?'checked':''} style="width:auto"> 夕</label>
+ <label><input id="hsBed" type="checkbox" ${homeCur.activePacks.寝前?'checked':''} style="width:auto"> 寝前</label>
+ <button class="primary" style="width:100%;margin-top:10px" onclick="saveHomeSettings()">💾 設定を保存</button>
+`;
+}
+function saveHomeSettings(){
+ if(!hsName.value.trim()||!hsDate.value){alert('患者名と次回訪問予定日は必須です');return}
+ homeCur.n=hsName.value.trim();homeCur.insurance=hsInsurance.value;homeCur.special={terminal:hsTerminal.checked,narcInj:hsNarcInj.checked,hpn:hsHpn.checked};homeCur.prevVisit=hsPrev.value;
+ if(hsPrev.value){homeCur.visitHistory=homeCur.visitHistory||[];if(!homeCur.visitHistory.includes(hsPrev.value))homeCur.visitHistory.push(hsPrev.value)}
+ homeCur.visitDate=hsDate.value;homeCur.visitTime=hsTime.value;
+ homeCur.activePacks={朝:hsMorning.checked,昼:hsNoon.checked,夕:hsEvening.checked,寝前:hsBed.checked};
+ refreshVisitLabel(homeCur);closeModal();hName.textContent=homeCur.n;hVisit.textContent='次回訪問 '+homeCur.visit;hDays.textContent=`あと ${homeCur.days} 日`;renderHomeDetail();renderHome();showToast('💾 患者設定を保存しました');
+}
+function changeNextVisit(){
+ modal.classList.remove('hide');modalTitle.textContent='📅 次回訪問日を変更';
+ modalBody.innerHTML=`<label>次回訪問予定日</label><input id="hnvDate" type="date" value="${homeCur.visitDate}"><label>訪問予定時刻（任意）</label><input id="hnvTime" type="time" value="${homeCur.visitTime||''}"><button class="primary" style="width:100%;margin-top:10px" onclick="saveNextVisit()">📅 この日程に変更</button>`;
+}
+function saveNextVisit(){
+ if(!hnvDate.value){alert('訪問予定日を選択してください');return}
+ if(confirm('現在の次回訪問日を「訪問実績」として記録しますか？')){homeCur.prevVisit=homeCur.visitDate;homeCur.visitHistory=homeCur.visitHistory||[];if(!homeCur.visitHistory.includes(homeCur.visitDate))homeCur.visitHistory.push(homeCur.visitDate)}
+ homeCur.visitDate=hnvDate.value;homeCur.visitTime=hnvTime.value;refreshVisitLabel(homeCur);
+ closeModal();hVisit.textContent='次回訪問 '+homeCur.visit;hDays.textContent=`あと ${homeCur.days} 日`;renderHomeDetail();renderHome();render();showToast('📅 次回訪問日を変更しました');
+}
+function toggleHomeCareTask(i){completeHomeCareTask(i)}
+function completePrep(){
+ const all=homeCur.prep.every((_,i)=>prepDone[homeCur.id+'-'+i]);
+ if(!all){alert('まだ未完了の訪問準備があります');return}
+ showToast('🚗 訪問準備 完了！'); sparkle(); haptic([20,30,20]);setTimeout(()=>{if(confirm('次回訪問予定日を続けて更新しますか？'))changeNextVisit()},900);
+}
+
+let todoFilter='all';
+function setTodoFilter(v){todoFilter=v;['All','Facility','Home'].forEach(x=>document.getElementById('tf'+x)?.classList.remove('active'));document.getElementById(v==='all'?'tfAll':v==='facility'?'tfFacility':'tfHome')?.classList.add('active');render();augmentMainNeedsWithSharing();}
+function render(){hideShareOverlay();renderHome();let fc=document.getElementById('facilityCount');if(fc){let n=P.filter(p=>p.s=='danger'||p.s=='warn').length;fc.textContent='要対応 '+n}patients.innerHTML=P.map(p=>`<div class="card" onclick="openP(${p.id},'facility')"><div class="row"><div><b>${p.n}</b><div class="muted">${p.r}</div></div><span class="badge ${p.s}">${p.l}</span></div></div>`).join('');const fItems=P.filter(p=>p.s!='ok'),hItems=HOME.filter(p=>homeCareStatus(p));
+ tcFacility.textContent=fItems.length;tcHome.textContent=hItems.length;const shareNeedsCount=(typeof pharmacyOpenNeeds==='function'?pharmacyOpenNeeds().length:0);tcAll.textContent=fItems.length+hItems.length+shareNeedsCount;
+ const fHtml=fItems.map(p=>`<div class="card" onclick="openP(${p.id},'todo')"><div class="row"><div class="todoName"><b>${p.n}</b><span class="badge typeFacility">🏢 施設</span></div><span class="badge ${p.s}">${p.l}</span></div><div class="muted">タップして「やること」を確認</div></div>`);
+ const hHtml=hItems.map(p=>`<div class="card" onclick="openHomePatient(${p.id})"><div class="row"><div class="todoName"><b>${p.n}</b><span class="badge typeHome">🏠 在宅</span></div><span class="badge danger">${homeCareStatus(p)}</span></div><div class="muted">次回 ${p.visit} ・ タップして確認</div></div>`);
+ todos.innerHTML=(todoFilter==='facility'?fHtml:todoFilter==='home'?hHtml:[...fHtml,...hHtml]).join('')}
+function tab(x){if(dirty&&!confirm('保存していない変更があります。移動しますか？'))return;dirty=false;['facility','home','todo','detail','homeDetail'].forEach(i=>document.getElementById(i).classList.add('hide'));document.getElementById(x).classList.remove('hide');render()}
+function goBack(){tab(origin)}
+function openP(id,from){cur=P.find(x=>x.id==id);origin=from;['facility','home','todo'].forEach(x=>document.getElementById(x).classList.add('hide'));detail.classList.remove('hide');pname.textContent=cur.n;proom.textContent=cur.r;pstatus.className='badge '+cur.s;pstatus.textContent=cur.l;renderRx();renderTasks()}
+function renderRx(){let groups={};drugs.forEach(d=>(groups[d.rp]??=[]).push(d));rxList.innerHTML=Object.entries(groups).map(([rp,a])=>`<div class="rx"><div class="rxhead">Rp.${rp}　${a[0].use}</div><div class="rxbody">${a.map(d=>`<div class="drugline" onclick="drugMenu(${d.id})"><b>${d.name}</b><span class="dose">1回 ${d.qty}</span><div class="muted">1日${d.use=='毎食直前'?3:1}回 ${d.use}　${d.days}日分　▾タップで変更</div></div>`).join('')}</div></div>`).join('')}
+function renderTasks(){
+ if(!tasks.length){taskList.innerHTML='<p class="muted">現在、未完了の作業はありません。</p>';bar.style.width='100%';prog.textContent='進捗 0 / 0';return}
+ taskList.innerHTML=tasks.map((x,i)=>`<div class="task ${x.done?'done':''}"><b>${i+1}. ${x.done?'✅':'⬜'} ${x.t}</b><div class="muted">${x.role=='薬剤師'?'👨‍⚕️ 薬剤師':'🧑‍💼 事務入力・作業可'}</div>${x.done?`<button class="undoBtn" onclick="undoTask(${i})">↩ 完了を取り消す</button>`:`<button class="primary" onclick="completeTask(${i})">✓ この作業を完了</button>`}</div>`).join('');
+ let n=tasks.filter(x=>x.done).length;bar.style.width=(100*n/tasks.length)+'%';prog.textContent=`進捗 ${n} / ${tasks.length}`;
+}
+function completeTask(i){
+ if(i>0&&!tasks[i-1].done){alert('上の作業を先に完了してください');return}
+ tasks[i].done=true;haptic(18);renderTasks();showToast('✅ 作業を完了しました');cleanupFacilityRegisteredDrugsAfterTask(tasks[i]);renderRx();syncStatusFromTasks();
+}
+function undoTask(i){
+ if(!confirm('この作業を未完了に戻しますか？'))return;
+ // If an earlier step is reverted, later steps also return to unfinished for safety.
+ for(let j=i;j<tasks.length;j++)tasks[j].done=false;
+ haptic(12);renderTasks();syncStatusFromTasks();showToast('↩ 未完了に戻しました');
+}
+function openRegister(){modal.classList.remove('hide');modalTitle.textContent='💊 薬品を登録';modalBody.innerHTML=`<button class="choice" onclick="pickMethod('GS1')">📷 GS1スキャン</button><button class="choice" onclick="pickMethod('OCR')">🔎 PTP文字認識</button><button class="choice" onclick="manualSearch()">⌨️ 薬品名を入力して検索</button>`}
+function pickMethod(x){alert(x+' は次段階で完成済みスキャナーを接続します。今回は登録画面の操作確認です。')}
+function manualSearch(){modalBody.innerHTML=`<label>薬品名</label><input id="newname" placeholder="例：カロナール 500"><label>1回量</label><input id="newqty" value="1錠"><label>用法</label><select id="newuse"><option>朝食後</option><option>昼食後</option><option>夕食後</option><option>毎食後</option><option>毎食直前</option><option>寝る前</option></select><label>日数</label><input id="newdays" type="number" value="14"><button class="primary" style="width:100%" onclick="saveNewDrug()">💾 この薬を登録</button>`}
+function saveNewDrug(){if(!newname.value.trim()){alert('薬品名を入力してください');return}let nid=Date.now(),nn=newname.value;drugs.push({id:nid,name:nn,qty:newqty.value,use:newuse.value,days:+newdays.value,rp:Math.max(...drugs.map(x=>x.rp))+1});
+tasks.unshift({key:'add-'+nid,kind:'add',t:`${nn}を今回処方へ追加・調剤する`,role:'事務',done:false});
+if(cur){cur.s='danger';cur.l='薬剤追加 作業待ち';pstatus.className='badge danger';pstatus.textContent=cur.l}
+closeModal();renderRx();renderTasks();render();showToast('✅ 薬品を登録しました')}
+function drugMenu(id){let d=drugs.find(x=>x.id==id);modal.classList.remove('hide');modalTitle.textContent=d.name;modalBody.innerHTML=`<div class="actions"><button onclick="changeDrug(${id},'中止')">🚫 中止</button><button onclick="changeDrug(${id},'減量')">⬇️ 減量</button><button onclick="changeDrug(${id},'増量')">⬆️ 増量</button><button onclick="changeDrug(${id},'その他')">⋯ その他</button></div><div id="changeArea"></div>`}
+function changeDrug(id,type){dirty=true;changeArea.innerHTML=`<div class="changebox"><b>${type}（未保存）</b>${type=='中止'?'':`<input id="changeVal" placeholder="変更後の内容">`}<button class="primary" style="width:100%" onclick="saveDrugChange(${id},'${type}')">💾 変更内容を保存</button></div>`}
+function saveDrugChange(id,type){
+ let d=drugs.find(x=>x.id==id),v=document.getElementById('changeVal')?.value||'';
+ if(type!='中止'&&!v){alert('変更後の内容を入力してください');return}
+ dirty=false;changeRecords[id]={id,type,value:v,name:d.name};rebuildTasksFromChanges();
+ cur.s='danger';cur.l=changeSummary()||nextTaskStatus();pstatus.className='badge danger';pstatus.textContent=cur.l;
+ changeArea.innerHTML=`<div class="saved">✅ ${type}を保存しました</div>`;
+ renderTasks();showToast('💾 変更内容を保存しました');haptic(15);
+}
+function rebuildTasksFromChanges(){
+ const arr=Object.values(changeRecords),work=[],prev=new Map(tasks.map(t=>[t.key||t.t,t.done]));
+ arr.forEach(c=>{
+   if(c.type==='中止')work.push({key:'drug-'+c.id,t:`朝14包から ${c.name} を抜き取る`,role:'事務',done:false});
+   else work.push({key:'drug-'+c.id,t:`${c.name}を${c.type}内容（${c.value}）へ修正する`,role:'事務',done:false});
+ });
+ if(arr.length){
+   work.push({key:'recheck',t:'変更した全薬剤を反映後、一包化を再鑑査する',role:'薬剤師',done:false});
+   if(arr.some(c=>c.type==='中止'))work.push({key:'dispose',t:'抜き取った中止薬をまとめて処理する',role:'事務',done:false});
+ }
+ work.forEach(t=>{if(prev.has(t.key))t.done=prev.get(t.key)});tasks=work;
+}
+
+let rxQrStream=null, rxQrTimer=null;
+
+function renderQrEnvironment(){
+ const el=document.getElementById('qrEnvStatus');if(!el)return;
+ const secure=(location.protocol==='https:'||location.hostname==='localhost');
+ const camera=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
+ const detector=('BarcodeDetector' in window);
+ if(!secure){
+   el.innerHTML='🧪 <b>ローカル確認中</b>：画面は確認できます。カメラテストはHTTPS公開後に有効になります。';
+ }else if(!camera){
+   el.innerHTML='🔴 HTTPSですが、このブラウザではカメラAPIを利用できません。';
+ }else if(!detector){
+   el.innerHTML='🟡 カメラは利用可能ですが、このブラウザは端末内QR検出に未対応です。Android版Chromeでの確認を推奨します。';
+ }else{
+   el.innerHTML='🟢 <b>QR実機テスト可能</b>：HTTPS・カメラ・端末内QR検出を確認しました。';
+ }
+}
+
+
+document.addEventListener('DOMContentLoaded',()=>{try{renderQrEnvironment()}catch(e){}});
+
+async function startRxQrTest(){
+ if(location.protocol!=='https:' && location.hostname!=='localhost'){alert('現在はローカル確認モードです。処方箋QRカメラは完成版をHTTPS公開した後に利用できます。');return;}
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    alert('このブラウザではカメラ機能を利用できません。');
+    return;
+  }
+  if(!('BarcodeDetector' in window)){
+    alert('このブラウザは標準の端末内QR読取に対応していません。QR画像や患者情報は送信されていません。');
+    return;
+  }
+  try{
+    rxQrStream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'}}, audio:false
+    });
+    modal.classList.remove('hide');
+    modalTitle.textContent='🔒 処方箋QR 端末内テスト';
+    modalBody.innerHTML=`
+      <div class="goodBox"><b>端末内処理のみ</b><div class="muted">写真フォルダへの保存・QR本文の保存・外部送信は行いません。</div></div>
+      <video id="rxQrVideo" autoplay playsinline style="width:100%;border-radius:14px;margin-top:10px"></video>
+      <div class="muted" style="margin-top:8px">QRコードをカメラ中央に映してください。</div>
+      <button style="width:100%;margin-top:10px" onclick="stopRxQrTest();closeModal()">中止</button>`;
+    document.getElementById('rxQrVideo').srcObject=rxQrStream;
+    const detector=new BarcodeDetector({formats:['qr_code']});
+    const scan=async()=>{
+      if(!rxQrStream) return;
+      try{
+        const v=document.getElementById('rxQrVideo');
+        if(v && v.readyState>=2){
+          const codes=await detector.detect(v);
+          if(codes.length){
+            const raw=codes[0].rawValue || '';
+            stopRxQrTest();
+            showRxQrDiagnostic(raw);
+            return;
+          }
+        }
+      }catch(e){}
+      rxQrTimer=setTimeout(scan,250);
+    };
+    rxQrTimer=setTimeout(scan,500);
+  }catch(e){
+    stopRxQrTest();
+    alert(location.protocol==='https:'?'カメラを起動できませんでした。Chromeのサイト設定でカメラ権限を確認してください。':'この画面はローカルファイルとして開かれています。カメラ利用にはHTTPSで公開して開いてください。');
+  }
+}
+
+function stopRxQrTest(){
+  if(rxQrTimer){clearTimeout(rxQrTimer);rxQrTimer=null;}
+  if(rxQrStream){rxQrStream.getTracks().forEach(t=>t.stop());rxQrStream=null;}
+}
+
+function showRxQrDiagnostic(raw){
+  const bytes=new TextEncoder().encode(raw).length;
+  const lines=raw.split(/\r?\n/).length;
+  const japanese=/[\u3040-\u30ff\u3400-\u9fff]/.test(raw);
+  const rxLike=/(Rp|処方|用法|錠|カプセル|mg|ｍｇ)/i.test(raw);
+  modal.classList.remove('hide');
+  modalTitle.textContent='✅ QR読取成功';
+  modalBody.innerHTML=`
+    <div class="goodBox">
+      <b>端末内でQRを読み取れました</b><br>
+      データ長：約 <b>${bytes} bytes</b><br>
+      行数：<b>${lines}</b><br>
+      日本語文字：<b>${japanese?'検出':'未検出'}</b><br>
+      処方情報らしい文字：<b>${rxLike?'検出':'形式解析が必要'}</b>
+    </div>
+    <div class="muted" style="margin-top:10px">
+      QR本文、患者氏名、保険情報は画面表示・保存していません。ページを閉じれば読取結果も残りません。<br>
+      まずは「処方箋QRをこの端末で読み取れるか」だけを確認する診断モードです。
+    </div>
+    <button class="primary" style="width:100%;margin-top:10px" onclick="closeModal()">閉じる</button>`;
+  raw='';
+}
+
+function closeModal(){if(dirty&&!confirm('保存していない変更があります。閉じますか？'))return;dirty=false;modal.classList.add('hide')}
+function finalCheck(){if(dirty){alert('未保存の変更があります');return}if(tasks.some(x=>!x.done)){alert('まだ未完了の作業があります');return}cur.s='ok';cur.l='薬剤師確認済み・交付OK';Object.keys(changeRecords).forEach(k=>delete changeRecords[k]);tasks=[];dirty=false;haptic([20,30,20]);showToast('✅ 薬剤師確認済み・交付OK');setTimeout(()=>tab(origin),450)}
+render();
+
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+
+
+let shareFilter='all';
+function shareNow(){return new Date().toLocaleString('ja-JP',{hour12:false})}
+function shareToday(){return localYmd()}
+function shareLoad(){try{return JSON.parse(localStorage.getItem('pharmacyShareV1')||'[]')}catch(e){return []}}
+function shareSave(a){localStorage.setItem('pharmacyShareV1',JSON.stringify(a))}
+function staffGet(){return localStorage.getItem('pharmacyCurrentStaff')||''}
+function auditPush(x,action){x.audit=x.audit||[];x.audit.push({at:shareNow(),by:staffGet()||'未選択',action})}
+function chooseStaff(){
+ const v=prompt('この端末を使用しているスタッフ名を入力してください',staffGet());
+ if(v===null||!v.trim())return;localStorage.setItem('pharmacyCurrentStaff',v.trim());renderShare();
+}
+function showPharmacyShare(){
+ document.querySelectorAll('section').forEach(x=>x.classList.add('hide'));
+ pharmacyShareScreen.classList.remove('hide');renderShare();
+}
+function hidePharmacyShare(){pharmacyShareScreen.classList.add('hide');if(typeof render==='function')render()}
+function addShareItem(){
+ const txt=shareText.value.trim();if(!txt){alert('内容を入力してください');return}
+ if(!staffGet()){alert('先に「使用者を選択」してください');return}
+ const a=shareLoad(),x={id:Date.now(),type:shareType.value,text:txt,due:shareDue.value,assignee:shareAssignee.value.trim(),status:'open',createdBy:staffGet(),createdAt:shareNow(),handledBy:'',handledAt:'',pharmacistBy:'',pharmacistAt:'',audit:[]};
+ auditPush(x,'登録');a.unshift(x);shareSave(a);shareText.value='';shareDue.value='';shareAssignee.value='';renderShare();showToast('📣 共有事項を登録しました');
+}
+function shareSetStatus(id,status){
+ if(!staffGet()){alert('先に使用者を選択してください');return}
+ const a=shareLoad(),x=a.find(v=>v.id===id);if(!x)return;
+ x.status=status;
+ if(status==='waiting')auditPush(x,'返答・入荷待ちへ変更');
+ if(status==='handled'){x.handledBy=staffGet();x.handledAt=shareNow();auditPush(x,'対応完了 → 薬剤師確認待ち')}
+ if(status==='open')auditPush(x,'要対応へ戻した');
+ shareSave(a);renderShare();
+}
+function pharmacistConfirm(id){if(!requireRole(['pharmacist','admin']))return;accessAudit('薬剤師最終確認',String(id));
+ if(!staffGet()){alert('先に使用者を選択してください');return}
+ const a=shareLoad(),x=a.find(v=>v.id===id);if(!x)return;
+ x.status='done';x.pharmacistBy=staffGet();x.pharmacistAt=shareNow();auditPush(x,'薬剤師最終確認済み');shareSave(a);renderShare();showToast('✅ 最終確認しました');
+}
+function shareUndo(id){
+ const a=shareLoad(),x=a.find(v=>v.id===id);if(!x)return;
+ x.status='open';x.handledBy='';x.handledAt='';x.pharmacistBy='';x.pharmacistAt='';auditPush(x,'完了操作を取り消し');shareSave(a);renderShare();
+}
+function shareHistory(id){
+ const x=shareLoad().find(v=>v.id===id);if(!x)return;
+ modal.classList.remove('hide');modalTitle.textContent='🕘 操作履歴';
+ modalBody.innerHTML=(x.audit||[]).slice().reverse().map(h=>`<div class="audit"><b>${h.action}</b><br>${h.at}　👤${h.by}</div>`).join('')||'<div class="muted">履歴なし</div>';
+}
+function renderShare(){
+ if(!document.getElementById('shareList'))return;
+ currentStaffChip.textContent='👤 '+(staffGet()||'未選択');
+ let a=shareLoad();shareOpenCount.textContent=a.filter(x=>x.status!=='done').length+'件';
+ if(shareFilter==='today')a=a.filter(x=>x.due===shareToday());
+ if(shareFilter==='wait')a=a.filter(x=>x.status==='waiting');
+ if(shareFilter==='done')a=a.filter(x=>x.status==='done');
+ shareList.innerHTML=a.length?a.map(x=>{
+  const overdue=x.due&&x.due<shareToday()&&x.status!=='done';
+  const cls=x.status==='done'?'shareDone':x.status==='waiting'?'shareWait':overdue?'shareUrgent':'';
+  const stat=x.status==='done'?'🟢確認済み':x.status==='handled'?'🔵薬剤師確認待ち':x.status==='waiting'?'🟡待ち':'🔴要対応';
+  return `<div class="shareCard ${cls}"><div class="row"><b>${x.type}</b><span class="badge pending">${stat}</span></div><div style="margin-top:6px">${x.text}</div>
+  <div class="shareMeta">入力：${x.createdBy} ${x.createdAt}${x.assignee?`　担当：${x.assignee}`:''}${x.due?`<br>期限：${x.due}${overdue?' ⚠️期限超過':''}`:''}${x.handledBy?`<br>対応：${x.handledBy} ${x.handledAt}`:''}${x.pharmacistBy?`<br>最終確認：${x.pharmacistBy} ${x.pharmacistAt}`:''}</div>
+  <div class="shareActions">${x.status==='open'?`<button onclick="shareSetStatus(${x.id},'waiting')">待ちへ</button><button onclick="shareSetStatus(${x.id},'handled')">対応完了</button>`:''}${x.status==='waiting'?`<button onclick="hideShareOverlay();shareSetStatus(${x.id},'open')">要対応へ</button><button onclick="shareSetStatus(${x.id},'handled')">対応完了</button>`:''}${x.status==='handled'?`<button class="primary" onclick="pharmacistConfirm(${x.id})">薬剤師最終確認</button><button onclick="shareUndo(${x.id})">戻す</button>`:''}${x.status==='done'?`<button onclick="shareUndo(${x.id})">完了を戻す</button>`:''}<button onclick="shareHistory(${x.id})">履歴</button></div></div>`
+ }).join(''):'<div class="muted">該当する共有事項はありません。</div>';
+}
+
+
+const ACCESS_ROLES={clerk:'事務',pharmacist:'薬剤師',admin:'管理者'};
+function accessUser(){try{return JSON.parse(sessionStorage.getItem('accessUser')||'null')}catch(e){return null}}
+function showAccessSettings(){document.querySelectorAll('section').forEach(x=>x.classList.add('hide'));accessSettingsScreen.classList.remove('hide')}
+function hideAccessSettings(){accessSettingsScreen.classList.add('hide');if(typeof render==='function')render()}
+function saveAccessUser(){
+ const n=acName.value.trim();if(!n){alert('スタッフ名を入力してください');return}
+ const u={name:n,role:acRole.value,loginAt:new Date().toISOString()};
+ sessionStorage.setItem('accessUser',JSON.stringify(u));
+ localStorage.setItem('pharmacyCurrentStaff',n);
+ hideAccessSettings();showToast(`🔐 ${n}（${ACCESS_ROLES[u.role]}）で開始しました`);
+}
+function requireRole(roles){
+ const u=accessUser();
+ if(!u){alert('先に使用者を選択してください。');showAccessSettings();return false}
+ if(!roles.includes(u.role)){alert('この操作は薬剤師または管理者のみ実行できます。');return false}
+ return true;
+}
+function accessAudit(action,target=''){
+ const u=accessUser();if(!u)return;
+ const a=JSON.parse(localStorage.getItem('accessAuditV1')||'[]');
+ a.unshift({at:new Date().toISOString(),by:u.name,role:u.role,action,target});
+ localStorage.setItem('accessAuditV1',JSON.stringify(a.slice(0,1000)));
+}
+function updateSecurityChip(){
+ const u=accessUser(),el=document.getElementById('securityChip');
+ if(el)el.textContent=u?`🔐 ${u.name}・${ACCESS_ROLES[u.role]}`:'🔐 使用者未選択';
+}
+if(location.protocol!=='https:' && document.getElementById('localPreviewNotice'))localPreviewNotice.style.display='block';
+window.addEventListener('load',()=>{updateSecurityChip()});
+
+function ensurePrnPatientHomeRows(){
+ if(!homeCur || !Array.isArray(homeCur.meds)) return;
+ homeCur.individualMeds=Array.isArray(homeCur.individualMeds)?homeCur.individualMeds:[];
+ homeCur.meds.filter(m=>m && (m.timing==='頓服'||m.usage==='頓服'||m.sig==='頓服'||m.isPrn===true)).forEach(m=>{
+   const key=(m.id!=null?'id:'+m.id:'name:'+(m.name||''));
+   let row=homeCur.individualMeds.find(x=>x.sourceKey===key || (x.name===m.name && x.autoFromPrn));
+   if(!row){
+     homeCur.individualMeds.push({
+       id:'prn_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+       sourceKey:key,autoFromPrn:true,name:m.name||'頓服薬',
+       homeQty:0,qty:0,note:'患者宅残（薬局保管残とは別管理）'
+     });
+   }else{
+     row.name=m.name||row.name;
+     // Deliberately do not synchronize quantities: patient-home stock and pharmacy stock are separate.
+   }
+ });
+}
+
+function refreshMadePackRemain(){
+ const d=document.getElementById('madePackRemainDays');
+ if(!d||!homeCur)return;
+ const days=Math.max(0,Number(homeCur.pharmacyMadeDays)||0);
+ d.textContent=days+'日分';
+ const u=document.getElementById('madePackRemainUntil');
+ if(u){
+   const base=homeCur.setupThrough||'';
+   u.textContent=base&&days?`患者宅セット済み ${base} ＋ 薬局保管 ${days}日分`:'作成可能最終日に反映します';
+ }
+ const old=document.getElementById('pharmacyMadeBalance');
+ if(old)old.innerHTML=`🏪 薬局保管の一包化残日数：<b>${days}日分</b>`;
+}
+
+function syncRegisteredPrnToPatientHome(){
+ if(!homeCur||!Array.isArray(homeCur.meds))return;
+ homeCur.prnMeds=Array.isArray(homeCur.prnMeds)?homeCur.prnMeds:[];
+ homeCur.meds.forEach(m=>{
+   const usage=String(m.timing||m.usage||m.sig||m.when||'');
+   if(!(m.isPrn===true||usage.includes('頓服')))return;
+   const key=m.id!=null?'med:'+m.id:'name:'+(m.name||'');
+   let p=homeCur.prnMeds.find(x=>x.sourceKey===key || (x.autoFromRegisteredPrn&&x.name===m.name));
+   if(!p){
+     homeCur.prnMeds.push({id:'homeprn_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),sourceKey:key,autoFromRegisteredPrn:true,name:m.name||'頓服薬',qty:0,homeQty:0});
+   }else p.name=m.name||p.name;
+ });
+}
+
+function hideShareOverlay(){
+ const x=document.getElementById('pharmacyShareScreen');
+ if(x)x.classList.add('hide');
+}
+
+function localYmd(d=new Date()){
+ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+ return `${y}-${m}-${day}`;
+}
+function collectUnifiedNeeds(){
+ const rows=[];
+ // Pharmacy sharing items
+ shareLoad().forEach(x=>{
+   if(x.status!=='done') rows.push({source:'📣共有',title:x.text||x.type,status:x.status,due:x.due||'',id:x.id});
+ });
+ // Facility/in-home needs: use currently rendered/known task stores where available.
+ try{
+   if(typeof getNeeds==='function'){
+     (getNeeds()||[]).forEach(x=>rows.push({source:x.kind==='home'?'🏠在宅':'🏢施設',title:x.title||x.text||x.name||'要対応',status:x.status||'open',due:x.due||x.date||'',raw:x}));
+   }
+ }catch(e){}
+ return rows;
+}
+function renderTodayGlobal(){
+ const box=document.getElementById('todayGlobalList'),cnt=document.getElementById('todayGlobalCount');
+ if(!box)return;
+ const today=localYmd();
+ let rows=collectUnifiedNeeds().filter(x=>x.due===today || (!x.due && x.raw && (x.raw.today===true)));
+ // Also include overdue unfinished pharmacy-sharing tasks, because they must be done today.
+ shareLoad().forEach(x=>{
+   if(x.status!=='done'&&x.due&&x.due<today&&!rows.some(r=>r.source==='📣共有'&&r.id===x.id))
+     rows.push({source:'📣共有',title:x.text||x.type,status:x.status,due:x.due,id:x.id,overdue:true});
+ });
+ cnt.textContent=rows.length+'件';
+ box.innerHTML=rows.length?rows.map(x=>`<div style="padding:8px 0;border-top:1px solid #edf0f2"><b>${x.source} ${x.title}</b>${x.overdue?'<span class="badge danger" style="margin-left:6px">期限超過</span>':''}<div class="muted">${x.due?'期限 '+x.due:''}</div></div>`).join(''):'<div class="muted">今日中の対応はありません 🎉</div>';
+}
+function renderUnifiedNeedsIntoShare(){
+ const host=document.getElementById('shareList');if(!host)return;
+ // Existing renderShare handles pharmacy items. Add facility/home-care summary below it.
+ let extra=[];
+ try{
+   if(typeof getNeeds==='function') extra=getNeeds()||[];
+ }catch(e){}
+ const old=document.getElementById('unifiedClinicalNeeds');if(old)old.remove();
+ if(extra.length){
+   const d=document.createElement('div');d.id='unifiedClinicalNeeds';
+   d.innerHTML='<div style="margin:12px 0 6px"><b>🏢施設・🏠在宅の要対応</b></div>'+extra.map(x=>`<div class="shareCard"><div class="row"><b>${x.kind==='home'?'🏠在宅':'🏢施設'} ${x.name||x.title||'要対応'}</b><span class="badge danger">${x.status||'要対応'}</span></div><div>${x.text||x.task||''}</div></div>`).join('');
+   host.parentElement.appendChild(d);
+ }
+}
+
+const _renderShareOriginal=renderShare;
+renderShare=function(){
+ _renderShareOriginal();
+
+ renderTodayGlobal();
+};
+
+window.addEventListener('load',()=>setTimeout(()=>{renderTodayGlobal();refreshUnifiedNeedCounts();},0));
+document.addEventListener('click',()=>setTimeout(()=>{renderTodayGlobal();refreshUnifiedNeedCounts();if(!document.getElementById('pharmacyShareScreen')?.classList.contains('hide'))renderShareCalendar();},0));
+
+function pharmacyOpenNeeds(){
+ return shareLoad().filter(x=>x.status!=='done').map(x=>({
+   id:x.id, source:'share', kind:'share', name:x.text||x.type,
+   title:x.text||x.type, status:x.status, due:x.due||'', raw:x
+ }));
+}
+function augmentMainNeedsWithSharing(){
+ const btn=document.getElementById('needsFilterShare');
+ const root=btn?btn.closest('section'):null;
+ if(!root)return;
+ const old=document.getElementById('mainNeedsShareRows');if(old)old.remove();
+ const items=pharmacyOpenNeeds();if(!items.length)return;
+ const block=document.createElement('div');block.id='mainNeedsShareRows';
+ block.innerHTML=items.map(x=>`<div class="card" style="margin-top:8px" onclick="showPharmacyShare()">
+   <div class="row"><b>${x.name}</b><span class="badge pending">📣 情報共有</span></div>
+   <div class="muted">${x.due?'期限 '+x.due+'　':''}タップして共有事項を確認</div>
+ </div>`).join('');
+ // 「すべて」または「情報共有」の時だけ共有行を表示。
+ // 施設・在宅フィルターでは混在させない。
+ block.style.display=(needsUnifiedFilter==='share'||todoFilter==='all')?'':'none';
+ root.appendChild(block);
+}
+function renderShareCalendar(){
+ const host=document.getElementById('shareCalendar');if(!host)return;
+ const now=new Date(), y=shareCalYear??now.getFullYear(), m=shareCalMonth??now.getMonth();
+ shareCalYear=y;shareCalMonth=m;
+ const first=new Date(y,m,1), last=new Date(y,m+1,0), start=first.getDay();
+ const items=shareLoad().filter(x=>x.status!=='done'&&x.due);
+ const counts={};items.forEach(x=>counts[x.due]=(counts[x.due]||0)+1);
+ const today=shareToday();
+ const todayDate=new Date(today+'T00:00:00');
+ let h=`<div class="row"><button onclick="moveShareCal(-1)">‹</button><b>${y}年 ${m+1}月</b><button onclick="moveShareCal(1)">›</button></div>
+ <div class="muted" style="margin-top:6px">🔴 本日・期限超過　🟡 期限が近い（3日以内）</div>
+ <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px;text-align:center;font-size:11px">
+ ${['日','月','火','水','木','金','土'].map(d=>`<b>${d}</b>`).join('')}`;
+ for(let i=0;i<start;i++)h+='<div></div>';
+ for(let d=1;d<=last.getDate();d++){
+   const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,c=counts[key]||0;
+   const dt=new Date(key+'T00:00:00');
+   const diff=Math.round((dt-todayDate)/86400000);
+   let urgency='';
+   if(c&&diff<=0)urgency='background:#ffe1e5;border:1px solid #ef9aa7;color:#9b1c31;';
+   else if(c&&diff>=1&&diff<=3)urgency='background:#fff3bf;border:1px solid #e5c85b;color:#6f5600;';
+   h+=`<button onclick="selectShareDate('${key}')" style="min-height:44px;padding:3px;${urgency}${shareSelectedDate===key?'outline:2px solid currentColor;':''}">${d}${c?`<br><b>●${c}</b>`:''}</button>`;
+ }
+ h+='</div><div id="shareCalendarDayList" style="margin-top:8px"></div>';
+ host.innerHTML=h;renderShareCalendarDay();
+}
+let shareCalYear,shareCalMonth,shareSelectedDate='';
+function moveShareCal(n){let d=new Date(shareCalYear,shareCalMonth+n,1);shareCalYear=d.getFullYear();shareCalMonth=d.getMonth();renderShareCalendar()}
+function selectShareDate(k){shareSelectedDate=k;renderShareCalendar()}
+function renderShareCalendarDay(){
+ const host=document.getElementById('shareCalendarDayList');if(!host)return;
+ if(!shareSelectedDate){host.innerHTML='<div class="muted">日付をタップすると、その日の共有事項を表示します。</div>';return}
+ const a=shareLoad().filter(x=>x.status!=='done'&&x.due===shareSelectedDate);
+ host.innerHTML=`<b>${shareSelectedDate}</b>`+(a.length?a.map(x=>`<div class="shareCard"><b>${x.type}</b><div>${x.text}</div><div class="shareMeta">${x.assignee?'担当 '+x.assignee:''}</div></div>`).join(''):'<div class="muted">予定なし</div>');
+}
+
+function mainNeedsShareOnly(){setNeedsFilterShare();}
+function refreshUnifiedNeedCounts(){
+ const e=document.getElementById('mainShareCount');if(e)e.textContent=pharmacyOpenNeeds().length;
+ augmentMainNeedsWithSharing();
+ if(document.getElementById('needsShareCount'))document.getElementById('needsShareCount').textContent=pharmacyOpenNeeds().length;
+}
+
+let needsUnifiedFilter='all';
+function setNeedsFilterShare(){
+ needsUnifiedFilter='share';
+ refreshUnifiedNeedsView();
+}
+function refreshUnifiedNeedsView(){
+ const c=document.getElementById('needsShareCount');
+ if(c)c.textContent=pharmacyOpenNeeds().length;
+ augmentMainNeedsWithSharing();
+ const block=document.getElementById('mainNeedsShareRows');
+ if(needsUnifiedFilter==='share'){
+   // Hide only the ordinary need cards inside the current Needs content area, not global header/today panel.
+   const shareBtn=document.getElementById('needsFilterShare');
+   const root=shareBtn?shareBtn.closest('section'):null;
+   if(root){
+     [...root.querySelectorAll('.card')].forEach(el=>{
+       if(el.id!=='mainNeedsShareRows' && !el.contains(shareBtn) && !el.closest('#mainNeedsShareRows')) el.dataset.shareFiltered='1',el.style.display='none';
+     });
+   }
+   if(block)block.style.display='';
+ }
+}
+function clearUnifiedNeedsShareFilter(){
+ needsUnifiedFilter='all';
+ document.querySelectorAll('[data-share-filtered="1"]').forEach(el=>{el.style.display='';delete el.dataset.shareFiltered});
+ const b=document.getElementById('mainNeedsShareRows');if(b)b.style.display='';
+}
+
+function ensureMadePackByUse(){
+ if(!homeCur)return;
+ const uses=['朝','昼','夕','寝前'];
+ if(!homeCur.pharmacyMadeByUse){
+   const d=Math.max(0,Number(homeCur.pharmacyMadeDays)||0);
+   homeCur.pharmacyMadeByUse={};
+   uses.forEach(k=>homeCur.pharmacyMadeByUse[k]=(homeCur.activePacks?.[k]===false?0:d));
+ }
+ uses.forEach(k=>{if(homeCur.pharmacyMadeByUse[k]==null)homeCur.pharmacyMadeByUse[k]=0});
+}
+function recalcMadePackDays(){
+ ensureMadePackByUse();
+ const active=['朝','昼','夕','寝前'].filter(k=>homeCur.activePacks?.[k]!==false);
+ const vals=active.map(k=>Math.max(0,+homeCur.pharmacyMadeByUse[k]||0));
+ homeCur.pharmacyMadeDays=vals.length?Math.min(...vals):0;
+}
+function madePackAllStep(delta){
+ ensureMadePackByUse();
+ ['朝','昼','夕','寝前'].forEach(k=>{
+   if(homeCur.activePacks?.[k]!==false)homeCur.pharmacyMadeByUse[k]=Math.max(0,(+homeCur.pharmacyMadeByUse[k]||0)+delta);
+ });
+ recalcMadePackDays();haptic(8);renderHomeDetail();renderHome();
+}
+function madePackUseStep(k,delta){
+ ensureMadePackByUse();
+ homeCur.pharmacyMadeByUse[k]=Math.max(0,(+homeCur.pharmacyMadeByUse[k]||0)+delta);
+ recalcMadePackDays();haptic(8);renderHomeDetail();renderHome();
+}
+function renderMadePackControls(){
+ const host=document.getElementById('madePackUseRows');if(!host||!homeCur)return;
+ ensureMadePackByUse();recalcMadePackDays();
+ const all=document.getElementById('madePackAllNum');if(all)all.textContent=homeCur.pharmacyMadeDays||0;
+ const d=document.getElementById('madePackRemainDays');if(d)d.textContent=(homeCur.pharmacyMadeDays||0)+'日分';
+ host.innerHTML=['朝','昼','夕','寝前'].map(k=>{
+   const active=homeCur.activePacks?.[k]!==false;
+   if(!active)return `<div class="stepper"><b>${k}</b><span class="muted">使用なし</span></div>`;
+   const v=homeCur.pharmacyMadeByUse[k]||0;
+   return `<div class="stepper"><b>${k}</b><button onclick="madePackUseStep('${k}',-1)">−</button><span class="num">${v}</span><button onclick="madePackUseStep('${k}',1)">＋</button><span class="muted">${v}日分</span></div>`;
+ }).join('');
+ const u=document.getElementById('madePackRemainUntil');
+ if(u)u.textContent=`作成可能日数は一番少ない用法（${homeCur.pharmacyMadeDays||0}日分）を基準に計算します`;
+}
+function linkPrnToPatientHome(d){
+ if(!homeCur||!d||String(d.use||'').trim()!=='頓服')return;
+ homeCur.loose=homeCur.loose||[];
+ let x=homeCur.loose.find(v=>v.rxId===d.id);
+ if(!x)homeCur.loose.push({rxId:d.id,n:d.name,remain:0,need:0,perDay:0,inPack:false,autoPrn:true});
+ else x.n=d.name;
+}
+
+
+</script>
+<section id="pharmacyShareScreen" class="hide">
+ <div class="card">
+  <div class="row"><div><b style="font-size:20px">📣 情報共有</b><div class="muted">申し送り・待ち・期限付き作業を登録</div></div><button onclick="hidePharmacyShare()">← 戻る</button></div>
+  <div class="row" style="margin-top:10px"><span id="currentStaffChip" class="staffChip">👤 未選択</span><button onclick="chooseStaff()">使用者を選択</button></div>
+ </div>
+ <div class="card">
+  <div class="row"><b>➕ 共有事項を登録</b><span class="badge pending">二重入力を減らす</span></div>
+  <label>種類</label><select id="shareType"><option>申し送り</option><option>発注・入荷待ち</option><option>疑義照会返答待ち</option><option>施設への確認待ち</option><option>在宅の処方依頼待ち</option><option>期限付き作業</option><option>その他</option></select>
+  <label>内容</label><input id="shareText" placeholder="例：○○施設　処方変更の返答待ち">
+  <div class="grid2"><div><label>期限</label><input id="shareDue" type="date"></div><div><label>担当者</label><input id="shareAssignee" placeholder="未定でも可"></div></div>
+  <button class="primary" style="width:100%;margin-top:8px" onclick="addShareItem()">登録</button>
+ </div>
+ <div class="card">
+ <div class="row"><b>📅 情報共有カレンダー</b><span class="badge pending">期限別</span></div>
+ <div class="muted">共有事項の期限を月ごとに確認できます。</div>
+ <div id="shareCalendar" style="margin-top:8px"></div>
+</div>
+<div class="card">
+  <div class="row"><b>📣 情報共有の未完了</b><span id="shareOpenCount" class="badge danger">0件</span></div>
+  <div class="quickDays"><button onclick="shareFilter='all';renderShare()">すべて</button><button onclick="shareFilter='today';renderShare()">今日</button><button onclick="shareFilter='wait';renderShare()">待ち</button><button onclick="shareFilter='done';renderShare()">完了</button></div>
+  <div id="shareList"></div>
+ </div>
+</section>
+
+<section id="accessSettingsScreen" class="hide">
+ <div class="card">
+  <div class="row"><div><b style="font-size:20px">🔐 アクセス管理</b><div class="muted">本番公開時のスタッフ権限</div></div><button onclick="hideAccessSettings()">← 戻る</button></div>
+ </div>
+ <div class="card">
+  <b>推奨する本番構成</b>
+  <div style="margin-top:8px">① スタッフ個別ログイン<br>② 事務／薬剤師／管理者の権限分離<br>③ 一定時間で自動ロック<br>④ 操作履歴を記録<br>⑤ 患者データは認証後のみ取得<br>⑥ QR画像・処方箋画像は保存しない</div>
+ </div>
+ <div class="card">
+  <b>この端末のテスト用スタッフ</b>
+  <label>名前</label><input id="acName" placeholder="例：山田">
+  <label>権限</label><select id="acRole"><option value="clerk">事務</option><option value="pharmacist">薬剤師</option><option value="admin">管理者</option></select>
+  <button class="primary" style="width:100%;margin-top:8px" onclick="saveAccessUser()">この使用者で開始</button>
+  <div class="muted" style="margin-top:8px">※これはローカル完成版確認用です。本番では名前選択だけで本人認証したことにはしません。</div>
+ </div>
+</section>
+</body></html>

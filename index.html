@@ -112,7 +112,7 @@
 
 <div id="carLayer" class="carLayer"><div class="carDust">💨</div><div class="car">🚗</div></div>
 <div id="toast" class="toast"></div>
-<header><b style="font-size:21px">🏠 在宅業務サポート</b><div class="sub">v0.92 JAHIS手動読取版</div></header><main>
+<header><b style="font-size:21px">🏠 在宅業務サポート</b><div class="sub">v0.93 カメラ起動修正版</div></header><main>
 <div class="tabs"><button onclick="hideShareOverlay();tab('facility')">🏢 施設</button><button onclick="hideShareOverlay();openHomeWithCar()">🏠 個人在宅</button><button onclick="showPharmacyShare()">📣 情報共有</button><button onclick="hideShareOverlay();tab('todo')">⚠️ 要対応</button></div>
 
 <div id="todayPharmacyGlobal" class="card" style="margin-top:8px">
@@ -852,24 +852,87 @@ let rxQrParts=[];
 async function startRxQrTest(){
  if(location.protocol!=='https:' && location.hostname!=='localhost'){alert('処方箋QRカメラはHTTPS公開ページで利用してください。');return;}
  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){alert('このブラウザではカメラ機能を利用できません。');return;}
- if(!('BarcodeDetector' in window)){alert('このブラウザは標準のQR読取に対応していません。');return;}
+
  stopRxQrTest(); rxQrParts=[]; rxQrBusy=false;
+
+ // 先に画面を作る。カメラ取得に失敗しても、本当のエラー内容を画面に残す。
+ modal.classList.remove('hide'); modalTitle.textContent='📄 JAHIS処方箋QR 手動読取';
+ modalBody.innerHTML=`
+ <div class="goodBox"><b>JAHIS処方箋QR用</b><div class="muted">まず背面カメラを起動します。QR解析はカメラ起動後に準備します。</div></div>
+ <video id="rxQrVideo" autoplay playsinline muted style="width:100%;border-radius:14px;margin-top:10px;background:#111;min-height:180px"></video>
+ <canvas id="rxQrCanvas" width="640" height="360" style="display:none"></canvas>
+ <div id="rxQrStatus" class="goodBox" style="margin-top:9px">カメラを起動しています…</div>
+ <div id="rxQrPartList" class="muted" style="margin-top:7px">読取済み：0個</div>
+ <button id="rxQrReadBtn" class="primary" style="width:100%;margin-top:10px" onclick="captureRxQrPart()" disabled>📷 このQRを読む</button>
+ <button id="rxQrFinishBtn" style="width:100%;margin-top:8px" onclick="finishRxQrParts()" disabled>✅ すべて読んだので確認</button>
+ <button style="width:100%;margin-top:8px" onclick="stopRxQrTest();closeModal()">中止</button>`;
+
  try{
-   rxQrDetector=new BarcodeDetector({formats:['qr_code']});
-   rxQrStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
-   modal.classList.remove('hide'); modalTitle.textContent='📄 JAHIS処方箋QR 手動読取';
-   modalBody.innerHTML=`
-   <div class="goodBox"><b>JAHIS処方箋QR用</b><div class="muted">QRコード Model 2を1個ずつ中央に大きく映し、「このQRを読む」を押します。自動連続解析はしません。</div></div>
-   <video id="rxQrVideo" autoplay playsinline muted style="width:100%;border-radius:14px;margin-top:10px;background:#111"></video>
-   <canvas id="rxQrCanvas" width="640" height="360" style="display:none"></canvas>
-   <div id="rxQrStatus" class="goodBox" style="margin-top:9px">カメラ準備中…</div>
-   <div id="rxQrPartList" class="muted" style="margin-top:7px">読取済み：0個</div>
-   <button id="rxQrReadBtn" class="primary" style="width:100%;margin-top:10px" onclick="captureRxQrPart()">📷 このQRを読む</button>
-   <button id="rxQrFinishBtn" style="width:100%;margin-top:8px" onclick="finishRxQrParts()" disabled>✅ すべて読んだので確認</button>
-   <button style="width:100%;margin-top:8px" onclick="stopRxQrTest();closeModal()">中止</button>`;
-   const v=document.getElementById('rxQrVideo'); v.srcObject=rxQrStream;
-   await v.play().catch(()=>{}); setRxQrStatus('QRを1個だけ中央に大きく映して「このQRを読む」を押してください');
- }catch(e){stopRxQrTest();alert('カメラを起動できませんでした。Chromeのサイト設定でカメラ権限を確認してください。');}
+   // Android端末で相性の悪い解像度指定を避け、まず最小条件で背面カメラを要求する。
+   try{
+     rxQrStream=await navigator.mediaDevices.getUserMedia({
+       video:{facingMode:{ideal:'environment'}},
+       audio:false
+     });
+   }catch(firstErr){
+     // facingMode指定が原因の場合に備え、video:true で再試行。
+     rxQrStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+   }
+
+   const v=document.getElementById('rxQrVideo');
+   if(!v) throw new Error('video element not found');
+   v.srcObject=rxQrStream;
+
+   await new Promise((resolve,reject)=>{
+     let done=false;
+     const ok=()=>{if(done)return;done=true;cleanup();resolve();};
+     const ng=()=>{if(done)return;done=true;cleanup();reject(new Error('video playback failed'));};
+     const cleanup=()=>{
+       v.removeEventListener('loadedmetadata',ok);
+       v.removeEventListener('canplay',ok);
+       v.removeEventListener('error',ng);
+     };
+     v.addEventListener('loadedmetadata',ok,{once:true});
+     v.addEventListener('canplay',ok,{once:true});
+     v.addEventListener('error',ng,{once:true});
+     setTimeout(ok,1800);
+   });
+
+   try{ await v.play(); }catch(playErr){ /* playsinline/autoplay環境ではmetadata後に表示できる場合がある */ }
+
+   // BarcodeDetector はカメラ起動後に初期化。ここで失敗してもカメラ自体は維持する。
+   if(!('BarcodeDetector' in window)){
+     rxQrDetector=null;
+     setRxQrStatus('✅ カメラは起動しました。ただし、このChromeでは標準QR解析機能を利用できません。');
+     return;
+   }
+
+   try{
+     if(BarcodeDetector.getSupportedFormats){
+       const formats=await BarcodeDetector.getSupportedFormats();
+       if(Array.isArray(formats) && !formats.includes('qr_code')){
+         rxQrDetector=null;
+         setRxQrStatus('✅ カメラは起動しました。ただし、この端末の標準解析はQRコードに対応していません。');
+         return;
+       }
+     }
+     rxQrDetector=new BarcodeDetector({formats:['qr_code']});
+   }catch(detErr){
+     rxQrDetector=null;
+     setRxQrStatus('✅ カメラは起動しました。QR解析準備エラー：'+(detErr?.name||'Error')+(detErr?.message?' / '+detErr.message:''));
+     return;
+   }
+
+   const btn=document.getElementById('rxQrReadBtn');
+   if(btn)btn.disabled=false;
+   setRxQrStatus('✅ カメラ起動OK。QRを1個だけ中央に大きく映して「このQRを読む」を押してください');
+ }catch(e){
+   stopRxQrTest();
+   const name=e&&e.name?e.name:'Error';
+   const msg=e&&e.message?e.message:'詳細なし';
+   setRxQrStatus('❌ カメラ起動エラー：'+name+' / '+msg);
+   alert('カメラ起動エラー：'+name+'\\n'+msg+'\\n\\nこの表示をスクリーンショットしてください。');
+ }
 }
 function setRxQrStatus(t){const e=document.getElementById('rxQrStatus');if(e)e.textContent=t;}
 function refreshRxQrParts(){
@@ -912,7 +975,7 @@ function finishRxQrParts(){
 function stopRxQrTest(){rxQrBusy=false;if(rxQrStream){rxQrStream.getTracks().forEach(t=>t.stop());rxQrStream=null;}rxQrDetector=null;}
 function showRxQrDiagnostic(raw){/* 互換性維持 */}
 
-function closeModal(){if(dirty&&!confirm('保存していない変更があります。閉じますか？'))return;dirty=false;modal.classList.add('hide')}
+function closeModal(){if(dirty&&!confirm('保存していない変更があります。閉じますか？'))return;dirty=false;stopRxQrTest();modal.classList.add('hide')}
 function finalCheck(){if(dirty){alert('未保存の変更があります');return}if(tasks.some(x=>!x.done)){alert('まだ未完了の作業があります');return}cur.s='ok';cur.l='薬剤師確認済み・交付OK';Object.keys(changeRecords).forEach(k=>delete changeRecords[k]);tasks=[];dirty=false;haptic([20,30,20]);showToast('✅ 薬剤師確認済み・交付OK');setTimeout(()=>tab(origin),450)}
 render();
 
